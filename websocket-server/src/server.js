@@ -1,32 +1,36 @@
-//Motheo Morena
-// Starts node server
+/* Motheo Morena
+   Starts Node server
+*/
 
+const { initSocketServer } = require("./sockets/socketServer");
+const { handleCommand } = require("./cli/cliHandler");
 const readline = require("readline");
 
-//Import CLI system
-const { handleCommand } = require("./cli/cliHandler");
+initSocketServer(); //Start websocket server
 
-//CLI Interface
+// CLI Interface
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-console.log("Server Starting...\n");
-console.log("Server CLI ready. Type a command: ");
+console.log("[SERVER] CLI ready. Type a command: \n");
 
-//Listen for terminal input
+// Listen for terminal input
 rl.on("line", (input) => {
     const trimmedInput = input.trim();
 
-    if (trimmedInput.length === 0) return;
+    if (!trimmedInput) return;
 
-    //Send input to CLI handler
-    handleCommand(trimmedInput);
-})
+    try {
+        handleCommand(trimmedInput);
+    } catch (err) {
+        console.log("[CLI ERROR]", err.message);
+    }
+});
 
-//Clean exit
+// Clean shutdown
 rl.on("close", () => {
-    console.log("\nServer Shutting down...");
+    console.log("\n[SERVER] Shutting down...");
     process.exit(0);
-})
+});
