@@ -1,11 +1,10 @@
-//Reads input (from terminal)
+//Reads input ()
 const { parseCommand } = require("./commandParser");
 const { routeCommand } = require("./commandRouter");
 
 function handleCommand(input) {
     console.log(`[INPUT] ${input}`);
 
-    // Parse raw text into structured command
     const commandObj = parseCommand(input);
 
     if (!commandObj) {
@@ -15,7 +14,6 @@ function handleCommand(input) {
 
     console.log("[PARSED]", commandObj);
 
-    // Route command
     routeCommand(commandObj);
 }
 
