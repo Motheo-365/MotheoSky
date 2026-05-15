@@ -1,3 +1,4 @@
+//COnvert text into structured command
 function parseCommand(input) {
     const parts = input.split(" ");
 

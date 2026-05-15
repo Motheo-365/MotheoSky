@@ -1,17 +1,21 @@
+//Sends command to correct handler
+const flightStatusCommand = require("../commands/flightStatusCommand");
+const killCommand = require("../commands/killCommand");
+const quitCommand = require("../commands/quitCommand");
+
 function routeCommand({ command, args }) {
-    switch (command) {
+    switch (command.toUpperCase()) {
         case "FLIGHT_STATUS":
-            console.log("[ROUTED] → flightStatusCommand");
-            console.log("[OUTPUT] Flight ID:", args[0]);
+            flightStatusCommand.execute(args);
             break;
 
         case "QUIT":
-            console.log("[ROUTED] → quit");
-            process.exit(0);
+            quitCommand.execute(args);
+            break;
 
         case "KILL":
-            console.log("[ROUTED] → kill");
-            process.exit(1);
+            killCommand.execute(args);
+            break;
 
         default:
             console.log("[ROUTED] → unknown command");

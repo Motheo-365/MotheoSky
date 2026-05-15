@@ -1,3 +1,4 @@
+//Reads input (from terminal)
 const { parseCommand } = require("./commandParser");
 const { routeCommand } = require("./commandRouter");
 

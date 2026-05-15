@@ -1,3 +1,6 @@
+//Motheo Morena
+// Starts node server
+
 const readline = require("readline");
 
 //Import CLI system
