@@ -215,7 +215,7 @@
         // returns the full list of airports with their gps coordinates
         // used by the angular frontend to plot markers on the leaflet map
         function getAirports($data, $db){
-            $query = "SELECT id, name, code as iata_code, city, country, latitude, longitude FROM airports";
+            $query = "SELECT id, name, iata_code, city, country, latitude, longitude FROM airports";
             $stmt = $db->prepare($query);
             $stmt->execute();
             $result = $stmt->get_result();
