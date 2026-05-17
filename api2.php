@@ -85,6 +85,10 @@
                 updateFlightPosition($data, $conn);
                 break;
             
+            case "Login":
+                Login($data,$conn);
+                break;
+            
             case "DispatchFlight":
                 dispatchFlight($data, $conn);
                 break;
@@ -669,5 +673,35 @@
         }
         
         respond("success", "flight retrieved successfully", $flight);
+    }
+
+    function Login($data,$db){
+        $username = $data['username'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$username || !$password) {
+            respond("error", "Missing username or password", null, 400);
+        }
+
+        $stmt = $db->prepare("SELECT id, username, type, api_key, password FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            respond("error", "Invalid username or password", null, 401);
+        }
+
+        $user = $result->fetch_assoc();
+
+        if (!($password === $user['password'])) {
+        respond("error", "Invalid username or password", null, 401);
+    }
+
+    respond("success", "Login successful", [
+        'username' => $user['username'],
+        'type'     => $user['type'],      // 'ATC' or 'Passenger'
+        'api_key'  => $user['api_key']
+    ]);
     }
 ?>
