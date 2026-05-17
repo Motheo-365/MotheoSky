@@ -65,14 +65,14 @@
                 respond("error", "missing api key", null, 401);
             }
 
-            $stmt = $db->prepare("SELECT id, type FROM users WHERE api_key = ?");
+            $stmt = $db->prepare("SELECT id, username, type FROM users WHERE api_key = ?");
             $stmt->bind_param("s", $apiKey);
             $stmt->execute();
 
             $result = $stmt->get_result();
 
             if ($result->num_rows === 0) {
-                respond("error", "invalid api key", null, 403);
+                respond("error", "invalid api key", null, 401);
             }
 
             return $result->fetch_assoc();
@@ -109,16 +109,27 @@
                 getFlight($data, $conn);
                 break;
 
+            case "Me":
+                me($data, $conn);
+                break;
+
             default:
                 respond("error", "unknown endpoint", null, 400);
         }
 
     // ============================ flight tracking functions ============================
-
         // ========== update flight position ==========
         // handles real-time flight movement updates from the node server simulation
         // this is a server-to-server endpoint, uses a shared api key (not user api key)
+       
         function updateFlightPosition($data, $db) {
+            //For safety. Ensures no random person on the internet can open it
+            $serverKey = $data['server_key'] ?? null;
+
+            if ($serverKey !== "ourSecretServerKey#") {
+                respond("error", "unauthorized", null, 403);
+            }
+
             $flightId = $data['flight_id'] ?? null;
             $lat = $data['latitude'] ?? null;      //new gps latitude
             $lng = $data['longitude'] ?? null;     //new gps longitude
@@ -384,7 +395,7 @@
                 INNER JOIN airports origin ON f.origin_airport_id = origin.id
                 INNER JOIN airports dest ON f.destination_airport_id = dest.id
                 INNER JOIN passenger_flights pf ON f.id = pf.flight_id
-                WHERE pf.passenger_id = ?
+                WHERE pf.user_id = ?
                 ORDER BY f.departure_time ASC
             ";
             $stmt = $db->prepare($query);
@@ -523,7 +534,12 @@
                 INNER JOIN airports dest ON f.destination_airport_id = dest.id
                 WHERE f.id = ?
             ";
-            $stmt = $db->prepare($query);
+           $stmt = $db->prepare($query);
+
+            if (!$stmt) {
+                respond("error", "SQL prepare failed: " . $db->error, null, 500);
+            }
+
             $stmt->bind_param("i", $flightId);
             
         } else if ($role === 'Passenger') {
@@ -559,11 +575,16 @@
                 INNER JOIN airports origin ON f.origin_airport_id = origin.id
                 INNER JOIN airports dest ON f.destination_airport_id = dest.id
                 INNER JOIN passenger_flights pf ON f.id = pf.flight_id
-                WHERE f.id = ? AND pf.passenger_id = ?
+                WHERE f.id = ? AND pf.user_id = ?
             ";
             $stmt = $db->prepare($query);
+
+            if (!$stmt) {
+                respond("error", "SQL prepare failed: " . $db->error, null, 500);
+            }
+
             $stmt->bind_param("ii", $flightId, $userId);
-            
+
         } else {
             respond("error", "unauthorized role", null, 403);
         }
@@ -646,12 +667,17 @@
                     pf.boarding_confirmed,
                     pf.confirmed_at
                 FROM passenger_flights pf
-                INNER JOIN users u ON pf.passenger_id = u.id
+                INNER JOIN users u ON pf.user_id = u.id
                 WHERE pf.flight_id = ?
                 ORDER BY u.username ASC
             ";
             
             $passengerStmt = $db->prepare($passengerQuery);
+
+            if (!$passengerStmt) {
+                respond("error", "SQL prepare failed: " . $db->error, null, 500);
+            }
+
             $passengerStmt->bind_param("i", $flightId);
             $passengerStmt->execute();
             $passengerResult = $passengerStmt->get_result();
@@ -694,14 +720,31 @@
 
         $user = $result->fetch_assoc();
 
-        if (!($password === $user['password'])) {
-        respond("error", "Invalid username or password", null, 401);
+        //Checks for both plaintext passwords and hashed passwords
+        if (
+            $password !== $user['password'] && 
+            !password_verify($password, $user['password'])
+        ) {
+            respond("error", "Invalid username or password", null, 401);
+        }
+
+        respond("success", "Login successful", [
+            'username' => $user['username'],
+            'type'     => $user['type'],      // 'ATC' or 'Passenger'
+            'api_key'  => $user['api_key']
+        ]);
     }
 
-    respond("success", "Login successful", [
-        'username' => $user['username'],
-        'type'     => $user['type'],      // 'ATC' or 'Passenger'
-        'api_key'  => $user['api_key']
-    ]);
+    // Helps WebSocket server to cleanly verify users
+    function Me($data, $db) {
+        $apiKey = $data['api_key'] ?? null;
+
+        $user = authenticate($db, $apiKey);
+
+        respond("success", "user", [
+            "id" => $user['id'],
+            "username" => $user['username'],
+            "type" => $user['type']
+        ]);
     }
 ?>

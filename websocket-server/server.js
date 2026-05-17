@@ -164,14 +164,7 @@ function startBoardingTimer(
     console.log(`Boarding window expired for flight ${flightNumber}`);
     activeTimers.delete(flightId);
     //start animation after boarding window closes
-    startAnimation(
-      flightId,
-      originLat,
-      originLng,
-      destLat,
-      destLng,
-      durationSeconds,
-    );
+   startFlightSimulation(data.flightId, socket.user.api_key);
   }, 60000); //60 seconds in milliseconds
 
   activeTimers.set(flightId, timer);
@@ -186,7 +179,7 @@ wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     //the .on(message) are signalling that we go from the angular client to the server...the web message protocol
     try {
-      const data = JSON.parse(message);
+      const data = JSON.parse(message.toString());
       console.log("Received:", data);
 
       //handle different message types here
