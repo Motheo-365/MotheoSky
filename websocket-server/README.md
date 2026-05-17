@@ -68,7 +68,7 @@
         - Call the correct command cliHandler
 
 ## COMMAND layer
-    - Contains actual executin logic for server-side terminal commands
+    - Contains actual executin logic for server-side terminal commands.
 
     # flightStatusCommand
         - Displays status of a flight in the server terminal
