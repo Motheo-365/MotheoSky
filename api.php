@@ -2,48 +2,48 @@
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
 
-    header('Content-Type: application/json'); //Force API to always return JSON
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: POST, GET, OPTIONS'); //ALlow HTTP methods used by API
-    header('Access-Control-Allow-Headers: Content-Type, Authorization'); //ALlow header like APIkeys
+    header('Content-Type: application/json'); //force api to always return json
+    header('Access-Control-Allow-Origin: *'); //allow any website to call this api (needed for angular)
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS'); //allow http methods used by api
+    header('Access-Control-Allow-Headers: Content-Type, Authorization'); //allow headers like api keys
 
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(200);
         exit;
     }
 
-    // ============================ Database CONNECTION ============================
-        include __DIR__ . '/config.php'; //Load database connection fomr config.php
+    // ============================ database connection ============================
+        include __DIR__ . '/config.php'; //load database connection from config.php
 
-        //Ensure database connection exists before continuing
+        //make sure database connection exists before continuing
         if (!isset($conn)) {
             http_response_code(500);
             exit(json_encode([
                 'status' => 'error',
-                'message' => 'Database connection not found'
+                'message' => 'database connection not found'
             ]));
         }
 
-    $rawBody = file_get_contents("php://input"); //Read raw JSON body sent by client
-    $data = json_decode($rawBody, true); //COnvert JSON into PHP array
+    $rawBody = file_get_contents("php://input"); //read raw json body sent by client
+    $data = json_decode($rawBody, true); //convert json into php array
 
     if (!is_array($data)) {
         $data = $_POST;
     }
 
-    $type = $data['type'] ?? null; // ** IMPORTANT*** Extract Request Type (used for routing API calls)
+    $type = $data['type'] ?? null; //extract request type (used for routing api calls)
 
     if (!$type) {
         http_response_code(400);
         exit(json_encode([
             'status' => 'error',
-            'message' => 'Missing request type'
+            'message' => 'missing request type'
         ]));
     }
 
-    // ============================ RESPONSE HELPER ============================
+    // ============================ response helper ============================
         
-        //Standard function to return consistent JSON reponses
+        //the standard function to return consistent json responses
         function respond($status, $message = null, $data = null, $code = 200) {
             http_response_code($code);
 
@@ -58,11 +58,11 @@
             exit(json_encode($res));
         }
 
-        //Validates API key against database users table
-        //NOTE: Ussed by other endpoints in full system (ATC / Passenger access control)
+        //validates api key against database users table
+        //used by endpoints to check if the user is allowed to do something
         function authenticate($db, $apiKey) {
             if (!$apiKey) {
-                respond("error", "Missing API key", null, 401);
+                respond("error", "missing api key", null, 401);
             }
 
             $stmt = $db->prepare("SELECT id, type FROM users WHERE api_key = ?");
@@ -72,29 +72,33 @@
             $result = $stmt->get_result();
 
             if ($result->num_rows === 0) {
-                respond("error", "Invalid API key", null, 403);
+                respond("error", "invalid api key", null, 403);
             }
 
             return $result->fetch_assoc();
         }
 
-    // ============================ ROUTER ============================
-        //Directs requests to correct function based on "type"
+    // ============================ router ============================
+        //directs requests to the correct function based on "type"
         switch ($type) {
             case "UpdateFlightPosition":
                 updateFlightPosition($data, $conn);
                 break;
             
+            case "Login":
+                Login($data,$conn);
+                break;
+            
             case "DispatchFlight":
-                dispatchFlight($data,$conn);
+                dispatchFlight($data, $conn);
                 break;
 
             case "GetAirports":
-                getAirports($data,$conn);
+                getAirports($data, $conn);
                 break;
             
             case "BoardFlight":
-                boardFlight($data,$conn);
+                boardFlight($data, $conn);
                 break;
             
             case "GetAllFlights":
@@ -106,34 +110,33 @@
                 break;
 
             default:
-                respond("error", "Unknown endpoint", null, 400);
+                respond("error", "unknown endpoint", null, 400);
         }
 
-    // ============================ PERSON 3 FUNCTIONS ============================
+    // ============================ flight tracking functions ============================
 
-        // LIVE FLIGHT TRACKING
-        //Handles real-time flight movement updates from simulation
+        // ========== update flight position ==========
+        // handles real-time flight movement updates from the node server simulation
+        // this is a server-to-server endpoint, uses a shared api key (not user api key)
         function updateFlightPosition($data, $db) {
             $flightId = $data['flight_id'] ?? null;
+            $lat = $data['latitude'] ?? null;      //new gps latitude
+            $lng = $data['longitude'] ?? null;     //new gps longitude
+            $status = $data['status'] ?? null;     //flight status (boarding, in flight, landed)
 
-            //New GPS coordinates
-                $lat = $data['latitude'] ?? null;
-                $lng = $data['longitude'] ?? null;
-
-            $status = $data['status'] ?? null; //Flight status
-
+            //make sure we have the required fields
             if (!$flightId || $lat === null || $lng === null) {
-                respond("error", "Missing required fields", null, 400);
+                respond("error", "missing required fields", null, 400);
             }
 
-            // Only allow predefined flight statuses (prevents invalid data corruption)
+            //only allow these flight statuses (prevents bad data from breaking things)
             $validStatuses = ["Scheduled", "Boarding", "In Flight", "Landed"];
 
             if ($status && !in_array($status, $validStatuses)) {
-                respond("error", "Invalid status", null, 400);
+                respond("error", "invalid status", null, 400);
             }
 
-             // If status is provided → update everything (lat, lng, status)
+            //if status is provided, update everything (lat, lng, status)
             if ($status) {
                 $stmt = $db->prepare("
                     UPDATE flights 
@@ -142,7 +145,7 @@
                 ");
                 $stmt->bind_param("ddsi", $lat, $lng, $status, $flightId);
             } 
-            //Otherwise only update position(lat/long)
+            //otherwise only update position (lat and long)
             else {
                 $stmt = $db->prepare("
                     UPDATE flights 
@@ -152,129 +155,120 @@
                 $stmt->bind_param("ddi", $lat, $lng, $flightId);
             }
 
-            //Confirm if update was success or not
+            //check if the update worked
             if ($stmt->execute()) {
-                respond("success", "Flight position updated");
+                respond("success", "flight position updated");
             } 
-            
             else {
-                respond("error", "Update failed");
+                respond("error", "update failed");
             }
         }
 
-        //Transitions a flight from Scheduled to Boarding. ATC only.
-        function dispatchFlight($input,$db){
-                
-               $user_email = $input['email'] ?? null; // type of user it has to be ATC else stop everything
-               $flightId = $input['flight_id'] ?? null; //Id of the flight to dispatch 
-               
-               //check if the type of user is ATC and if the flight id is valid
-               if(!$flightId || $user_email == null){
-                    respond("error","Missing required fields",null,400);
-               }
-               $query = "SELECT 1 FROM users WHERE email = ? AND type = 'ATC' "; //check if the user email belongs to an ATC to continue
-               $stmt = $db->prepare($query);
-               $stmt->bind_param("s",$user_email);
-               $stmt->execute();
+        // ========== dispatch flight ==========
+        // transitions a flight from scheduled to boarding. only atc can do this.
+        function dispatchFlight($data, $db){
+            
+            $apiKey = $data['api_key'] ?? null;      //api key from the logged in user
+            $flightId = $data['flight_id'] ?? null;  //id of the flight to dispatch
+            
+            //make sure we have both fields
+            if (!$flightId || !$apiKey) {
+                respond("error", "missing required fields (api_key and flight_id)", null, 400);
+            }
+            
+            //check if the user is an atc (only atc can dispatch flights)
+            $user = authenticate($db, $apiKey);
+            
+            if ($user['type'] !== 'ATC') {
+                respond("error", "user is not authorized to dispatch flights", null, 400);
+            }
+            
+            //check if the flight exists and has status 'scheduled'
+            $query = "SELECT 1 FROM flights WHERE id = ? AND status = 'Scheduled'";
+            $stmt = $db->prepare($query);
+            $stmt->bind_param("i", $flightId);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-               $result = $stmt->get_result();
-
-               if($result->num_rows == 0){ // if no result are returned it means the user is not an ATC
-                    respond("error","User is not Authorized",null,400);
-               }
-               
-               $query = "SELECT 1 FROM Flights WHERE id = ? AND status = 'Scheduled'"; //check if the status of the flight id is Scheduled if not return an error
-               $stmt = $db->prepare($query);
-               $stmt->bind_param("i",$flightId);
-               $stmt->execute();
-
-               $result = $stmt->get_result();
-
-               if($result->num_rows === 0){
-                    respond("error","No such Scheduled Flight with that ID",null,400);
-               }
-               else{
-                    $timestamp = date("Y-m-d H:i:s"); // create a timestamp for the exact date it was executed
-                    $new_status = "Boarding"; // new status to update to 
-                    $query = "UPDATE flights 
-                            SET status = ?, dispatched_at = ?
-                            WHERE id = ?";
-
-                    $stmt = $db->prepare($query);
-                    $stmt->bind_param("ssi",$new_status,$timestamp,$flightId);
-                    
-                    if(!$stmt->execute()){
-                        respond("error","Failed to update the flight status",null,400);
-                    }
-                    else{
-                        respond("success","Flight has been successfully updated to Boarding",null);
-                    }
-               }
+            if ($result->num_rows === 0) {
+                respond("error", "no scheduled flight found with that id", null, 400);
+            }
+            
+            //update the flight status to 'boarding' and set the dispatched_at timestamp
+            $timestamp = date("Y-m-d H:i:s"); //current date and time
+            $new_status = "Boarding";
+            
+            $query = "UPDATE flights 
+                      SET status = ?, dispatched_at = ?
+                      WHERE id = ?";
+            $stmt = $db->prepare($query);
+            $stmt->bind_param("ssi", $new_status, $timestamp, $flightId);
+            
+            if (!$stmt->execute()) {
+                respond("error", "failed to update the flight status", null, 400);
+            }
+            
+            respond("success", "flight has been successfully dispatched and is now boarding");
         }
         
-        //Returns the full list of airports with their GPS coordinates used to plot markers on the Leaflet map
-        function getAirports($input,$db){
-            $query = "SELECT id,name,iata_code,city,country,latitude,longitude FROM Airports";
-            $stmt = $db->prepare($query); // prepare the query to be sent to the database
-            $stmt->execute(); //runs the query across the Airports table to retrieve the required information
+        // ========== get all airports ==========
+        // returns the full list of airports with their gps coordinates
+        // used by the angular frontend to plot markers on the leaflet map
+        function getAirports($data, $db){
+            $query = "SELECT id, name, iata_code, city, country, latitude, longitude FROM airports";
+            $stmt = $db->prepare($query);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-            $result = $stmt->get_result(); // get the results of the query
-
-            if($result->num_rows == 0){
-                respond("error","No data matches your request",null,400);
+            if ($result->num_rows == 0) {
+                respond("error", "no airports found", null, 400);
             }
 
-            $row = $result->fetch_all(MYSQLI_ASSOC);
-            respond("success","Request has been successful",$row);
-            return;
+            $airports = $result->fetch_all(MYSQLI_ASSOC);
+            respond("success", "airports retrieved successfully", $airports);
         }
 
-        function boardFlight($input,$db){
-            $user_email = $input['email'] ?? null;
-            $flightId = $input['flight_id'] ?? null;
-
-            //check if input is not null 
-            if(!$user_email || !$flightId){
-                respond("error","Missing required fields",null,400);
+        // ========== board flight ==========
+        // called when a passenger confirms they are boarding
+        // passenger must confirm within 60 seconds of dispatch
+        function boardFlight($data, $db){
+            $apiKey = $data['api_key'] ?? null;      //api key from the logged in user
+            $flightId = $data['flight_id'] ?? null;  //id of the flight to board
+            
+            //make sure we have both fields
+            if (!$apiKey || !$flightId) {
+                respond("error", "missing required fields (api_key and flight_id)", null, 400);
             }
 
-            //check if the passenger with the email exists as a passenger
-            $query = "SELECT id FROM Users WHERE email = ? AND type = 'Passenger'";
-            $stmt = $db->prepare($query);
-            $stmt->bind_param("s",$user_email);
-            $stmt->execute();
+            //check if the user is a passenger (only passengers can board)
+            $user = authenticate($db, $apiKey);
+            
+            if ($user['type'] !== 'Passenger') {
+                respond("error", "user is not a passenger", null, 400);
+            }
+            
+            $userId = $user['id']; //get the user id from the authenticated user
 
+            //verify that the passenger is actually booked on this flight
+            $query = "SELECT 1 FROM passenger_flights WHERE passenger_id = ? AND flight_id = ?";
+            $stmt = $db->prepare($query);
+            $stmt->bind_param("ii", $userId, $flightId);
+            $stmt->execute();
             $result = $stmt->get_result();
 
-            if($result->num_rows == 0){
-                respond("error","User is not a Passenger",null,400);
+            if ($result->num_rows == 0) {
+                respond("error", "passenger is not booked on this flight", null, 400);
             }
 
-            $row = $result->fetch_assoc();
-            $user_id = $row['id']; //user ID if they exists
-
-            //verify that the user is part of the boardFlight
-            $query = "SELECT 1 FROM Passenger_Flights WHERE passenger_id = ? AND flight_id = ?";
+            //check if the flight has been dispatched (dispatched_at should not be null)
+            $query = "SELECT dispatched_at FROM flights WHERE id = ? AND dispatched_at IS NOT NULL";
             $stmt = $db->prepare($query);
-            $stmt->bind_param("ii",$user_id,$flightId);
+            $stmt->bind_param("i", $flightId);
             $stmt->execute();
-
             $result = $stmt->get_result();
 
-            if($result->num_rows == 0){
-                respond("error","User is not Registered in the Flight",null,400);
-            }
-
-            //check if dispatch exists for the flight look in the flights table 
-            $query = "SELECT dispatched_at FROM Flights WHERE id = ? AND dispatched_at IS NOT NULL";
-            $stmt = $db->prepare($query);
-            $stmt->bind_param("i",$flightId);
-            $stmt->execute();
-
-            $result = $stmt->get_result();
-
-            if($result->num_rows == 0){
-                respond("error","Flight has not been dispatched yet",null,400);
+            if ($result->num_rows == 0) {
+                respond("error", "flight has not been dispatched yet", null, 400);
             }
 
             $row = $result->fetch_assoc();
@@ -284,45 +278,48 @@
             $dispatchTime = strtotime($dispatchAt);
             $now = time();
 
-            $diff = $now - $dispatchTime;
+            $secondsPassed = $now - $dispatchTime;
 
-            if($diff > 60){
-                respond("error","Boarding window expired",null,400);
+            //check if the 60 second boarding window has expired
+            if ($secondsPassed > 60) {
+                respond("error", "boarding window has expired (60 seconds passed)", null, 400);
             }
 
-            $num = 1;
-            $query = "UPDATE Passenger_Flights
-                        SET boarding_confirmed = ?,  confirmed_at= ?
-                        WHERE passenger_id = ? AND flight_id = ?";
+            //update the passenger_flights table to mark boarding as confirmed
+            $confirmed = 1;
+            $query = "UPDATE passenger_flights
+                      SET boarding_confirmed = ?, confirmed_at = ?
+                      WHERE passenger_id = ? AND flight_id = ?";
 
             $stmt = $db->prepare($query);
-            $stmt->bind_param("isii",$num,$currentTime,$user_id,$flightId);
+            $stmt->bind_param("isii", $confirmed, $currentTime, $userId, $flightId);
 
-            if(!$stmt->execute()){
-                respond("error","Failed to update the Boarding Flight");
+            if (!$stmt->execute()) {
+                respond("error", "failed to confirm boarding");
             }
 
-            respond("success","Boarding confirmed successfully",null);
-
+            respond("success", "boarding confirmed successfully");
         }
 
-    //================================== GETALLFLIGHTS SECTION =====================================
+    // ============================ get all flights ============================
 
-    function getAllFlights($input, $db) {
-        $apiKey = $input['api_key'] ?? null;
+    //returns flights based on the role of the authenticated user
+    //atc sees all flights, passenger only sees flights they are booked on
+    function getAllFlights($data, $db) {
+        $apiKey = $data['api_key'] ?? null;
         
-        //here we authenticate the user
+        //authenticate the user using their api key
         $user = authenticate($db, $apiKey);
         
         if (!$user) {
-            respond("error", "Authentication failed", null, 401);//the error message that is returned if the authentication fails
+            respond("error", "authentication failed", null, 401);
         }
         
         $role = $user['type'];
         $userId = $user['id'];
         
         if ($role === 'ATC') {
-            //getting all the flights
+            //atc gets all flights with full details
             $query = "
                 SELECT 
                     f.id,
@@ -355,7 +352,7 @@
             $stmt = $db->prepare($query);
             
         } else if ($role === 'Passenger') {
-            //rememeber, the passenger should only see the flights they are booked on
+            //passenger only sees flights they are booked on
             $query = "
                 SELECT 
                     f.id,
@@ -394,23 +391,23 @@
             $stmt->bind_param("i", $userId);
             
         } else {
-            respond("error", "Unauthorized role", null, 403);
+            respond("error", "unauthorized role", null, 403);
         }
         
         if (!$stmt) {
-            respond("error", "Database query failed", null, 500);
+            respond("error", "database query failed", null, 500);
         }
         
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows === 0) {
-            respond("success", "No flights found", []);
+            respond("success", "no flights found", []);
         }
         
         $flights = [];
         while ($row = $result->fetch_assoc()) {
-            //building the flight object
+            //build the flight object
             $flight = [
                 'id' => $row['id'],
                 'flight_number' => $row['flight_number'],
@@ -445,12 +442,12 @@
                 ]
             ];
             
-            //adding dispatched_at if it exists (only for dispatched flights)
+            //add dispatched_at if it exists (only for flights that have been dispatched)
             if ($row['dispatched_at'] !== null) {
                 $flight['dispatched_at'] = $row['dispatched_at'];
             }
             
-            //adding the passenger-specific fields if role is Passenger
+            //add passenger-specific fields if the user is a passenger
             if ($role === 'Passenger') {
                 $flight['booking_details'] = [
                     'seat_number' => $row['seat_number'],
@@ -462,38 +459,41 @@
             $flights[] = $flight;
         }
         
-        respond("success", "Flights retrieved successfully", [
+        respond("success", "flights retrieved successfully", [
             'role' => $role,
             'count' => count($flights),
             'flights' => $flights
         ]);
     }
 
-    //======================== GETFLIGHT CODE ====================================
+    //========================= get single flight ============================
 
-    function getFlight($input, $db) {
+    //returns detailed information for a single flight
+    //atc gets full details + passenger list
+    //passenger gets details only if booked on the flight (no passenger list)
+    function getFlight($data, $db) {
 
-        $apiKey = $input['api_key'] ?? null;
-        $flightId = $input['flight_id'] ?? null;
+        $apiKey = $data['api_key'] ?? null;
+        $flightId = $data['flight_id'] ?? null;
         
-        //validating the required fields
+        //make sure we have the flight id
         if (!$flightId) {
-            respond("error", "Missing flight_id parameter", null, 400);
+            respond("error", "missing flight_id parameter", null, 400);
         }
         
-        //authenticating the user
+        //authenticate the user using their api key
         $user = authenticate($db, $apiKey);
         
         if (!$user) {
-            respond("error", "Authentication failed", null, 401);
+            respond("error", "authentication failed", null, 401);
         }
         
         $role = $user['type'];
         $userId = $user['id'];
         
-        //we first have to check if flight exists and get basic details
+        //first check if the flight exists and get basic details
         if ($role === 'ATC') {
-            //the ATC will then get the full flight details with passenger list
+            //atc gets full flight details with passenger list
             $query = "
                 SELECT 
                     f.id,
@@ -527,7 +527,7 @@
             $stmt->bind_param("i", $flightId);
             
         } else if ($role === 'Passenger') {
-            //remember: the passenger has to get the flight details ONLY if they are booked on it; not any other flight
+            //passenger gets flight details ONLY if they are booked on it
             $query = "
                 SELECT 
                     f.id,
@@ -565,22 +565,22 @@
             $stmt->bind_param("ii", $flightId, $userId);
             
         } else {
-            respond("error", "Unauthorized role", null, 403);
+            respond("error", "unauthorized role", null, 403);
         }
         
         if (!$stmt) {
-            respond("error", "Database query failed", null, 500);
+            respond("error", "database query failed", null, 500);
         }
         
         $stmt->execute();
         $result = $stmt->get_result();
         
-        //check if flight exists and if user has access
+        //check if flight exists and if the user has access to it
         if ($result->num_rows === 0) {
             if ($role === 'Passenger') {
-                respond("error", "Flight not found or you are not booked on this flight", null, 404);
+                respond("error", "flight not found or you are not booked on this flight", null, 404);
             } else {
-                respond("error", "Flight not found", null, 404);
+                respond("error", "flight not found", null, 404);
             }
         }
         
@@ -621,12 +621,12 @@
             ]
         ];
         
-        //add the dispatched_at if it exists
+        //add dispatched_at if it exists
         if ($row['dispatched_at'] !== null) {
             $flight['dispatched_at'] = $row['dispatched_at'];
         }
         
-        //add passenger-specific fields if role is Passenger
+        //add passenger-specific fields if role is passenger
         if ($role === 'Passenger') {
             $flight['booking_details'] = [
                 'seat_number' => $row['seat_number'],
@@ -635,7 +635,7 @@
             ];
         }
         
-        //**FOR ATC ONLY: Get the passenger list**
+        //for atc only: get the passenger list
         if ($role === 'ATC') {
             $passengerQuery = "
                 SELECT 
@@ -672,8 +672,36 @@
             $flight['passenger_count'] = count($passengers);
         }
         
-        respond("success", "Flight retrieved successfully", $flight);
+        respond("success", "flight retrieved successfully", $flight);
     }
 
-    
+    function Login($data,$db){
+        $username = $data['username'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$username || !$password) {
+            respond("error", "Missing username or password", null, 400);
+        }
+
+        $stmt = $db->prepare("SELECT id, username, type, api_key, password FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            respond("error", "Invalid username or password", null, 401);
+        }
+
+        $user = $result->fetch_assoc();
+
+        if (!($password === $user['password'])) {
+        respond("error", "Invalid username or password", null, 401);
+    }
+
+    respond("success", "Login successful", [
+        'username' => $user['username'],
+        'type'     => $user['type'],      // 'ATC' or 'Passenger'
+        'api_key'  => $user['api_key']
+    ]);
+    }
 ?>
