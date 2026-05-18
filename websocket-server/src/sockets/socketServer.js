@@ -160,14 +160,24 @@ async function handleDispatch(data, { socket }) {
     });
 
     if (res.status === "success") {
-       startFlightSimulation(data.flightId);
-        const subscribers = getFlightSubscribers(data.flightId);
+       startFlightSimulation(data.flightId, socket.user.api_key);
 
-        subscribers.forEach(clientId => {
-            const clientSocket = getSocket(clientId);
+        const flightRes = await request({
+            type: "GetFlight",
+            api_key: socket.user.api_key,
+            flight_id: data.flightId
+        });
 
-            if (clientSocket) {
-                clientSocket.send(JSON.stringify({
+        if (flightRes.status !== "success") return;
+
+        const passengers = flightRes.data.passengers || [];
+
+        // Start Boarding Call
+        passengers.forEach(p => {
+            const s = getSocket(p.username);
+
+            if (s) {
+                s.send(JSON.stringify({
                     type: "BOARDING_CALL",
                     flightId: data.flightId
                 }));
@@ -198,14 +208,14 @@ function startFlightSimulation(flightId, apiKey) {
             }
 
             const flight = res.data;
+
+            // Send POSITION to subscribers
             const subscribers = getFlightSubscribers(flightId);
 
             subscribers.forEach(clientId => {
-
                 const clientSocket = getSocket(clientId);
 
                 if (clientSocket) {
-
                     clientSocket.send(JSON.stringify({
                         type: "POSITION",
                         flightId: flightId,
@@ -215,13 +225,33 @@ function startFlightSimulation(flightId, apiKey) {
                 }
             });
 
+            // UPDATE DB periodically (optional but good)
+            await request({
+                type: "UpdateFlightPosition",
+                server_key: process.env.SERVER_KEY,
+                flight_id: flightId,
+                latitude: flight.current_position.latitude,
+                longitude: flight.current_position.longitude
+            });
+
+            // FINAL LANDING CHECK
             if (flight.status === "Landed") {
+                subscribers.forEach(clientId => {
+                    const s = getSocket(clientId);
+
+                    if (s) {
+                        s.send(JSON.stringify({
+                            type: "FLIGHT_LANDED",
+                            flightId: flightId
+                        }));
+                    }
+                });
+
                 clearInterval(timer);
             }
 
-        } 
-        catch (err) {
-            console.error(err);
+        } catch (err) {
+            console.error("Simulation error:", err);
             clearInterval(timer);
         }
 
