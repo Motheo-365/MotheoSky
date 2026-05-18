@@ -1,3 +1,116 @@
+### To RUN:
+    cd websocket-server
+    npm install
+    
+    node src/server.js [PORT]
+    OR 
+    node src/server.js
+    <Enter Port in Terminal>
+
+### TERMINAL TESTING ( Code found inside Commands Folder)
+    ## FLIGHT_STATUS <ID>
+        > FLIGHT_STATUS 4
+
+        Expected Output:
+            [INPUT] FLIGHT_STATUS 4
+            [PARSED] { command: 'FLIGHT_STATUS', args: [ '4' ] }
+            
+            ========== FLIGHT STATUS ==========
+            Flight ID: 4
+            Status: Landed
+            Latitude: 49.187199
+            Longitude: -123.185303
+            Passengers: 0 / 1
+            Estimated Landing: 2026-04-24T12:18:00.000Z
+            ===================================
+
+    ## KILL <User>
+        ## 1. GO to https://piehost.com/websocket-tester 
+        ## 2. In ws (where we enter url) Use ws://localhost:<Chosen Port>
+        ## 3.  Authorising User (Checks if user exists in the database)
+            ## 3.1 GET a user's api key (ANY) from the database
+            ## 3.2 in the message body enter:
+                {
+                  "type": "AUTH",
+                  "api_key": "b7b8f491ecb7cbd79ef6008e8b33f7e4"
+                }
+        ## 4. In Terminal (VS Code, etc.):
+            > KILL <username>
+
+            Expected Output (Using username amber.blue26)
+                [INPUT] KILL amber.blue26
+                [PARSED] { command: 'KILL', args: [ 'amber.blue26' ] }
+                [KILL COMMAND] Attempting to disconnect user: amber.blue26
+                [SUCCESS] User amber.blue26 disconnected
+
+            Note users can only be killed if  they are logged onto the server, i.e. have been authorised on WebSocket
+
+    ## QUIT terminal
+        > QUIT
+
+        Expected Output in terminal:
+            [INPUT] QUIT
+            [PARSED] { command: 'QUIT', args: [] }
+            [SERVER] Broadcasting shutdown message...
+            [SERVER] All connections closed.
+            [SERVER] Server shutting down...
+
+        Expected Output on PieSocket:        
+            {
+              "type": "KILLED",
+              "message": "You have been disconnected by the server"
+            }
+        
+### Webcosket Message Protocol (Angular Messages) (Code found inside sockets/socketService)
+    - Note : These should all tested in PieSocket message box
+
+    ## TRACK flights
+        {
+          "type": "TRACK",
+          "flightId": 1
+        }
+
+        Expected Output:       
+            {
+              "type": "TRACK_SUCCESS",
+              "flightId": 1
+            }
+
+    ## DISPATCH user  
+        {
+          "type": "DISPATCH",
+          "api_key": "b7b8f491ecb7cbd79ef6008e8b33f7e4",
+          "flightId": 3
+        }
+
+        Expected output:                  
+            {
+              "type": "DISPATCH_RESULT",
+              "data": {
+                "status": "error",
+                "timestamp": 1779091078522,
+                "message": "no scheduled flight found with that id"
+              }
+            }
+
+        - Find a user that is on a scheduled flight in DB to get success message
+
+    ## BOARD
+        NOTE; This api_key belongs to that of an ATC only Passengers are allowed to Board flights
+    
+            {
+              "type": "BOARD",
+              "api_key": "b7b8f491ecb7cbd79ef6008e8b33f7e4",
+              "flightId": 3
+            }
+
+        Expected Output:
+            {
+              "type": "ERROR",
+              "message": "Unauthorized"
+            }
+
+
 ### FILE STRUCTURE: EXPLANATION
 
     project-root/
