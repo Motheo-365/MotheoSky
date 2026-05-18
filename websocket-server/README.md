@@ -186,3 +186,7 @@
 
 # .env
     - Stores environment variables
+
+## To RUN:
+    cd websocket-server
+    node src/server.js
