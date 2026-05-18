@@ -1,4 +1,4 @@
-### FILE STRCUTURE: EXPLANATION
+### FILE STRUCTURE: EXPLANATION
 
     project-root/
     │
@@ -186,3 +186,8 @@
 
 # .env
     - Stores environment variables
+
+## To RUN:
+    cd websocket-server
+    npm install
+    node src/server.js
