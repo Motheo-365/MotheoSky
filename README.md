@@ -1,3 +1,20 @@
+### WEBSOCKET-SERVER SUMMARY
+    The websocket-server is a real-time communication layer for a flight management system. 
+
+ ## 1. HOW IT WORKS:
+     Main flow:
+     1. Node.js server (src/server.js) starts and initialises both CLI and WebSocket systems
+     2. CLI layer allows operators to run terminal commands FLIGHT_STATUS, KILL, QUIT)
+     3. WebSocket layer handles client connections and real-time messageing
+     4. API Service communicates with my PHP backend to fetch data from the phpMyAdmin database.
+
+## 2. HOW IT PULLS DATA FROM phpMyAdmin:
+    Client (Angular --- Not implemented) --. (Websocket Message) --> Websocket Server --> (HTTPP Request) --> apiService (src/services/apiService.js) --> HTTP GET/POST) --> PHP Backend (api.php) --> phpMyAdmin Databse
+
+    apiService acts as a bridge --- it sends HTTP requests to my PHP backend, which queries the phpMyAdmin database and returns fliht/passenger data. The server doesnt duplicate backedn logic; it only facilitatstes real-time communication.
+    
+    
+
 ### To RUN:
     cd websocket-server
     npm install
