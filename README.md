@@ -1,201 +1,139 @@
-### WEBSOCKET-SERVER SUMMARY
-    The websocket-server is a real-time communication layer for a flight management system. 
+# Flight Management Project
+This repository contains a full-stack flight management system with:
+    - `client/`: Angular 21 frontend for login, passenger, and ATC pages
+    - `server/`: Node.js WebSocket server plus CLI command support
+    - `api.php`: PHP backend API for database access and authentication
 
- ## 1. HOW IT WORKS:
-     Main flow:
-     1. Node.js server (src/server.js) starts and initialises both CLI and WebSocket systems
-     2. CLI layer allows operators to run terminal commands FLIGHT_STATUS, KILL, QUIT)
-     3. WebSocket layer handles client connections and real-time messageing
-     4. API Service communicates with my PHP backend to fetch data from the phpMyAdmin database.
+## Project Summary
 
-## 2. HOW IT PULLS DATA FROM phpMyAdmin:
-    Client (Angular --- Not implemented) --. (Websocket Message) --> Websocket Server --> (HTTPP Request) --> apiService (src/services/apiService.js) --> HTTP GET/POST) --> PHP Backend (api.php) --> phpMyAdmin Databse
+The application supports:
 
-    apiService acts as a bridge --- it sends HTTP requests to my PHP backend, which queries the phpMyAdmin database and returns fliht/passenger data. The server doesnt duplicate backedn logic; it only facilitatstes real-time communication.
-    
-    
+- user login with role-based access
+- passenger flight listing and flight tracking
+- real-time WebSocket updates for flight status and boarding events
+- server CLI commands for flight inspection and user management
+- a PHP backend API for database queries and authentication
 
-### To RUN:
-    cd websocket-server
-    npm install
-    
-    node src/server.js [PORT]
-    OR 
-    node src/server.js
-    <Enter Port in Terminal>
+## Client
 
-### TERMINAL TESTING ( Code found inside Commands Folder)
-    ## FLIGHT_STATUS <ID>
-        > FLIGHT_STATUS 4
+The Angular client includes:
 
-        Expected Output:
-            [INPUT] FLIGHT_STATUS 4
-            [PARSED] { command: 'FLIGHT_STATUS', args: [ '4' ] }
-            
-            ========== FLIGHT STATUS ==========
-            Flight ID: 4
-            Status: Landed
-            Latitude: 49.187199
-            Longitude: -123.185303
-            Passengers: 0 / 1
-            Estimated Landing: 2026-04-24T12:18:00.000Z
-            ===================================
+- login page and authentication flow
+- passenger page for viewing booked flights and live tracking
+- shared toast notifications for feedback
+- websocket connection management for live updates
+- API calls to `api.php` via `client/src/app/services/api.ts`
 
-    ## KILL <User>
-        ## 1. GO to https://piehost.com/websocket-tester 
-        ## 2. In ws (where we enter url) Use ws://localhost:<Chosen Port>
-        ## 3.  Authorising User (Checks if user exists in the database)
-            ## 3.1 GET a user's api key (ANY) from the database
-            ## 3.2 in the message body enter:
-                {
-                  "type": "AUTH",
-                  "api_key": "b7b8f491ecb7cbd79ef6008e8b33f7e4"
-                }
-        ## 4. In Terminal (VS Code, etc.):
-            > KILL <username>
+## Server
 
-            Expected Output (Using username amber.blue26)
-                [INPUT] KILL amber.blue26
-                [PARSED] { command: 'KILL', args: [ 'amber.blue26' ] }
-                [KILL COMMAND] Attempting to disconnect user: amber.blue26
-                [SUCCESS] User amber.blue26 disconnected
+The Node server includes:
 
-            Note users can only be killed if  they are logged onto the server, i.e. have been authorised on WebSocket
+- `server/src/server.js`: starts the WebSocket server and CLI services
+- CLI command support in `server/src/cli/`
+- command implementations in `server/src/commands/`
+- websocket connection and event handling in `server/src/sockets/`
+- server-side API relay to PHP in `server/src/services/apiService.js`
 
-    ## QUIT terminal
-        > QUIT
+## API Backend
 
-        Expected Output in terminal:
-            [INPUT] QUIT
-            [PARSED] { command: 'QUIT', args: [] }
-            [SERVER] Broadcasting shutdown message...
-            [SERVER] All connections closed.
-            [SERVER] Server shutting down...
+The PHP API handles request types such as:
 
-        Expected Output on PieSocket:        
-            {
-              "type": "KILLED",
-              "message": "You have been disconnected by the server"
-            }
-        
-### Webcosket Message Protocol (Angular Messages) (Code found inside sockets/socketService)
-    - Note : These should all tested in PieSocket message box
+- `Login`
+- `Me`
+- `GetAllFlights`
+- `Dispatch`
+- `Board`
 
-    ## TRACK flights
-        {
-          "type": "TRACK",
-          "flightId": 1
-        }
+and returns JSON responses with `status`, `message`, and `data`.
 
-        Expected Output:       
-            {
-              "type": "TRACK_SUCCESS",
-              "flightId": 1
-            }
+## Running the Project
 
-    ## DISPATCH user  
-        {
-          "type": "DISPATCH",
-          "api_key": "b7b8f491ecb7cbd79ef6008e8b33f7e4",
-          "flightId": 3
-        }
+### 1. Start the PHP backend
 
-        Expected output:                  
-            {
-              "type": "DISPATCH_RESULT",
-              "data": {
-                "status": "error",
-                "timestamp": 1779091078522,
-                "message": "no scheduled flight found with that id"
-              }
-            }
+Make sure `api.php` is served by your local PHP environment and connected to the database.
 
-        - Find a user that is on a scheduled flight in DB to get success message
+### 2. Start the Node WebSocket server
 
-    ## BOARD
-        NOTE; This api_key belongs to that of an ATC only Passengers are allowed to Board flights
-    
-            {
-              "type": "BOARD",
-              "api_key": "b7b8f491ecb7cbd79ef6008e8b33f7e4",
-              "flightId": 3
-            }
+```bash
+cd server
+npm install
+node src/server.js [PORT]
+```
 
-        Expected Output:
-            {
-              "type": "ERROR",
-              "message": "Unauthorized"
-            }
+### 3. Start the Angular client
 
+```bash
+cd client
+npm install
+npm run dev
+```
 
-### FILE STRUCTURE: EXPLANATION
+Then open the local URL shown by Vite.
 
-    project-root/
-    │
-    ├── src/
-    │   ├── server.js
-    │   │
-    │   ├── cli/
-    │   │   ├── cliHandler.js
-    │   │   ├── commandParser.js
-    │   │   └── commandRouter.js
-    │   │
-    │   ├── commands/
-    │   │   ├── quitCommand.js
-    │   │   ├── killCommand.js
-    │   │   └── flightStatusCommand.js
-    │   │
-    │   ├── sockets/
-    │   │   ├── socketServer.js
-    │   │   └── connectionManager.js
-    │   │
-    │   ├── state/
-    │   │   └── serverState.js
-    │   │
-    │   ├── services/
-    │   │   └── apiService.js
-    │   │
-    │   └── utils/
-    │       └── logger.js
-    │
-    ├── .env
-    └── package.json
+## Key Features
 
+### Passenger Experience
 
-## src/server.js
-    - Main entry point of server
-    - Start NodeJS process
-    - Initialise CLI system
-    - Keeps application running
-    - Handles graceful shutdown
+- fetches booked flights for the logged-in passenger
+- displays flight status, route, and departure time
+- allows flight selection for tracking
+- shows live coordinates and boarding notifications
 
-## CLI layer
-    - handles commands typed into rge server terminal by the server operator.
+### WebSocket Real-Time Updates
 
-    # cli/cliHandler
-        - reads terminal input string using process.stdin
-        - Detect user input from the terminal- Forward raw command text to the commandParser
+- the frontend connects with WebSocket after login
+- server broadcasts flight updates and boarding events
+- passenger page updates without reload
 
-    # cli/commandParser
-        - converts raw terminal text into structured command object
-        - Split commands into
-            * Arguments
-            * Command Name
-        - Validates basic command structured
+### CLI Commands
 
+Server terminal commands include:
 
-        Example:
-            INPUT: KILL joe
-            OUTPUT:
-                {
-                    "command": "KILL",
-                    "args": ["joe"]
-                }
-        
-    # cli/commandRouter
-        - Routes parsed commands to the correct command cliHandler
-        - Determine which command file should execute (flightStatusCommand, killCommand, quitCommand)
-        - Call the correct command cliHandler
+- `FLIGHT_STATUS <id>`
+- `KILL <username>`
+- `QUIT`
+
+## File Structure
+
+```
+COS_216_Assignment/
+├── api.php
+├── config.php
+├── users.txt
+├── client/
+│   ├── angular.json
+│   ├── package.json
+│   ├── public/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── app.ts
+│   │   │   ├── app.routes.ts
+│   │   │   ├── pages/
+│   │   │   │   ├── login/
+│   │   │   │   ├── passenger/
+│   │   │   │   └── atc/
+│   │   │   ├── services/
+│   │   │   └── components/
+│   │   └── environments/
+│   └── tsconfig.json
+└── server/
+    ├── package.json
+    └── src/
+        ├── server.js
+        ├── cli/
+        ├── commands/
+        ├── sockets/
+        ├── services/
+        └── state/
+```
+
+## Notes
+
+- Angular is the frontend user interface
+- Node server provides real-time WebSocket communication
+- PHP API is the backend data access layer
+- Toast notifications show client-side feedback
+- Route guards protect passenger and ATC pages
 
 ## COMMAND layer
     - Contains actual executin logic for server-side terminal commands.
