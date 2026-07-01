@@ -1,0 +1,210 @@
+body {
+    display: flex;
+    justify-content: center; /* horizontal */
+    align-items: center;     /* vertical */
+}
+
+.login-container {
+    padding: 2%;
+}
+
+h1 {
+  margin-top: 3%;
+  text-align: center;
+}
+
+.signup-form {
+    margin: 2rem auto;
+    padding: clamp(1rem, 3vw, 2rem);
+
+    width: min(90%, 900px);
+    border-radius: 12px;
+
+    background-color: rgba(255, 255, 255, 0.647);
+    box-shadow: 3px 5px 10px #4c4e51;
+
+    position: relative;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+/* ---------- FORM ROW (GLOBAL ALIGNMENT SYSTEM) ---------- */
+.form-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2%;
+    margin-bottom: 1rem;
+}
+
+/* labels always same width */
+.form-row label {
+    text-align: right;
+    padding: 0;
+}
+
+/* inputs ALWAYS same size */
+.form-row input {
+    width: 75%;
+    height: 42px;
+    padding: 0.8rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.password-wrapper {
+    width: 75%;
+    position: relative;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 5rem;
+}
+
+/* toggle stays aligned inside same cell */
+.password-wrapper span {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+
+    cursor: pointer;
+    color: #2563eb;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.password-wrapper span:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ---------- INPUTS ---------- */
+
+input[type="text"],
+input[type="password"] {
+    flex: 1;
+
+    padding: 0.8rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    font-size: 0.95rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ---------- LEVELS ---------- */
+
+.level1 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding-bottom: 1.2rem;
+}
+
+.level2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.level2 > div:last-child {
+    padding-left: 0;
+}
+
+/* ---------- BUTTONS ---------- */
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.full-submit {
+    padding: 0.8rem 1.5rem;
+    background: #2563eb;
+    color: white;
+
+    border: none;
+    border-radius: 10px;
+
+    font-size: 1rem;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: background .25s ease, transform .1s ease;
+
+    width: auto;
+}
+
+.full-submit:hover {
+    background: #1d4ed8;
+}
+
+.full-submit:active {
+    transform: translateY(2px);
+}
+
+/* ---------- LINKS ---------- */
+
+.form-link {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.form-link a {
+    color: #2563eb;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.form-link a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* ---------- TABLET ---------- */
+
+@media (max-width: 768px) {
+    .level1,
+    .level2 {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-row label:first-child {
+        text-align: left;
+    }
+}
+
+/* ---------- MOBILE ---------- */
+@media (max-width: 480px) {
+    .signup-form {
+        width: 95%;
+        padding: 1rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        font-size: 0.9rem;
+    }
+
+    .full-submit {
+        width: 100%;
+    }
+}

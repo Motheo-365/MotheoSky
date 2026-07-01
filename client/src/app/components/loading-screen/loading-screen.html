@@ -1,0 +1,12 @@
+@if (isRendered) {
+  <div class="loading-container" [class.fade-out]="!isVisible">
+  <div class="loading-card">
+    <h2>Loading Flight System</h2>
+    <p>Please wait while we prepare the dashboard...</p>
+
+    <div class="progress-bar">
+      <div class="progress"></div>
+    </div>
+  </div>
+</div>
+}

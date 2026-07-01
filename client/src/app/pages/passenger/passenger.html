@@ -1,0 +1,150 @@
+<!--
+  Passenger should view a list of their booked flights
+  Passenger should select a flight to track in real-time
+
+  When a flight is dispatched (by ATC):
+    - A boarding notification must appear immediately.
+    – A visible 60-second countdown timer must be shown.
+    – The Passenger must be able to click a Board button.
+    – If not confirmed within 60 seconds, the Passenger is marked as a no-show.
+
+  Passenger should only track flight they are booked on
+  While tracking, the Passenger must see:
+    - Live aircraft position updates.
+    – Flight number.
+    – Origin and destination.
+    – Current status (Scheduled, Boarding, In Flight, Landed).
+      ∗ Flights must transition between statuses according to the following rules:
+        · When an ATC dispatches a flight, its status changes from Scheduled to Boarding.
+        · The 60-second boarding window begins immediately when the flight enters the Boarding state.
+        · After the 60-second boarding window expires, the flight status must transition from Boarding
+          to In Flight. The aircraft animation begins at this point.
+        · When the animation progress reaches the destination, the flight status must transition from
+          In Flight to Landed.
+    These transitions must be enforced by the NodeJS server and reflected in the database via the
+    appropriate API endpoints.
+  -->
+<div class="passenger-page">
+
+  <!-- Flights List View -->
+  @if (!trackedFlight) {
+    <div class="flights-container">
+      <h1>My Flights</h1>
+
+      <div class="flights">
+        @if (flights.length > 0) {
+          <ul>
+            @for (flight of flights; track flight.id) {
+              <li (click)="trackFlight(flight)">
+                <div class="flight-top">
+                    <strong>{{ flight.flight_number }}</strong>
+
+                    <span
+                        class="status"
+                        [ngClass]="'status-' + flight.status.toLowerCase().replace(' ','-')">
+                        {{ flight.status }}
+                    </span>
+                </div>
+
+                <div class="route">
+                    <span>{{ flight.origin_city }}</span>
+                    ✈
+                    <span>{{ flight.dest_city }}</span>
+                </div>
+
+                <div class="departure">
+                    Departure: {{ flight.departure_time }}
+                </div>
+            </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">
+            @if (!hasLoaded) {
+              <p>Loading flights...</p>
+            }
+
+            @if (hasLoaded && flights.length === 0) {
+              <p>No flights found.</p>
+            }
+
+            @if (errorMessage) {
+              <p>{{ errorMessage }}</p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Flight Tracking View -->
+  @if (isTracking && trackedFlight) {
+    <div class="tracking-container">
+      <div class="tracking-header">
+        <h1>Tracking Flight {{ trackedFlight.flight_number }}</h1>
+        <button class="stop-tracking-btn" (click)="stopTracking()">← Back to Flights</button>
+      </div>
+      <app-map [flights]="flights"></app-map>
+
+      <!-- Flight Info -->
+    <div class="flight-info">
+      <div class="info-item">
+        <label>Flight Number</label>
+        <p>{{ trackedFlight.flight_number }}</p>
+      </div>
+
+      <div class="info-item">
+        <label>Route</label>
+        <p>{{ trackedFlight.origin?.city }} → {{ trackedFlight.destination?.city }}</p>
+      </div>
+
+      <div class="info-item">
+        <label>Status</label>
+        <p [ngClass]="'status-' + trackedFlight.status.toLowerCase().replace(' ', '-')">
+          {{ trackedFlight.status }}
+        </p>
+      </div>
+
+      <div class="info-item">
+        <label>Departure Time</label>
+        <p>{{ trackedFlight.departure_time }}</p>
+      </div>
+    </div>
+
+    <!-- Live Position Updates -->
+    <div class="position-info">
+      <h3>Live Position</h3>
+      <div class="coordinates">
+        <p><strong>Latitude:</strong> {{ trackedFlight.current_latitude || 'N/A' }}</p>
+        <p><strong>Longitude:</strong> {{ trackedFlight.current_longitude || 'N/A' }}</p>
+      </div>
+    </div>
+
+    <!-- Boarding Notification -->
+    @if (isBoardingActive) {
+      <div class="boarding-section">
+        <div class="boarding-alert">
+          <h2>BOARDING STARTS NOW!</h2>
+          <p class="countdown">Time remaining: <strong>{{ boardingCountdown }}s</strong></p>
+          <button class="board-btn" (click)="boardFlight()" [disabled]="isBoarded">
+            {{ isBoarded ? '✓ Boarded' : 'BOARD FLIGHT' }}
+          </button>
+          @if (!isBoarded) {
+            <p class="warning">
+              You must board within 60 seconds or be marked as a no-show.
+            </p>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Boarded Confirmation -->
+    @if (isBoarded) {
+      <div class="boarded-confirmation">
+        <p>You have successfully boarded flight {{ trackedFlight.flight_number }}</p>
+      </div>
+    }
+  </div>
+}
+
+</div>

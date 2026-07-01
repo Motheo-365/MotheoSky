@@ -1,0 +1,48 @@
+<h1>Login</h1>
+ @if (isLoading) {
+  <app-loading-screen [visible]="isLoading"></app-loading-screen>
+ }
+<div class="login-container">
+  <form class="signup-form" (ngSubmit)="onLogin()">
+
+    <div id="errorBox" style="color:red;"></div>
+
+    <div class="form-row">
+      <label>Username:</label>
+      <input
+        type="text"
+        id="username"
+        [(ngModel)]="username"
+        name="username"
+        placeholder="Enter your username"
+      >
+    </div>
+
+    <div class="form-row password-row">
+      <label>Password:</label>
+
+      <div class="password-wrapper">
+        <input
+          [type]="passwordVisible ? 'text' : 'password'"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+        >
+
+        <span (click)="togglePassword()">
+          {{ passwordVisible ? 'Hide' : 'Show' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Port:</label>
+
+      <input type="text" [(ngModel)]="wsPort" name="wsPort" placeholder="Enter websocket port (1024-49151)">
+    </div>
+
+      <button type="submit" class="full-submit">
+        {{isLoading ? 'Logging in...' : 'Login' }}
+      </button>
+  </form>
+</div>

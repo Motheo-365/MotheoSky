@@ -1,0 +1,199 @@
+<div class="atc-page">
+<app-loading-screen *ngIf="isLoading"></app-loading-screen>
+  <div class="atc-header">
+    <div>
+      <h1>Air Traffic Control</h1>
+      <p>Flight Operations Dashboard</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <h2>{{ flights.length }}</h2>
+        <p>Total Flights</p>
+      </div>
+
+      <div class="stat-card">
+        <h2>2</h2>
+        <p>Boarding</p>
+      </div>
+
+      <div class="stat-card">
+        <h2>5</h2>
+        <p>In Flight</p>
+      </div>
+
+      <div class="stat-card">
+        <h2>12</h2>
+        <p>Landed</p>
+      </div>
+    </div>
+  </div>
+
+    <app-map [flights]="flights"></app-map>
+
+    <div class="dashboard">
+    <div class="flight-panel">
+      <h2>Flights</h2>
+
+      @for (flight of flights; track flight.id) {
+        <div class="flight-card" (click)="selectFlight(flight)">
+          <div class="flight-top">
+            <strong> ✈ {{ flight.flight_number }} </strong>
+
+            <span
+              class="status"
+              [ngClass]="'status-' + flight.status.toLowerCase().replace(' ', '-')"
+            >
+              {{ flight.status }}
+            </span>
+          </div>
+
+          <p>
+            {{ flight.origin_city }}
+            →
+            {{ flight.dest_city }}
+          </p>
+
+          <small>
+            Departure:
+            {{ flight.departure_time }}
+          </small>
+        </div>
+      }
+    </div>
+
+    @if (selectedFlight) {
+      <div class="details-panel">
+        <div class="details-header">
+          <h2>
+            {{ selectedFlight.flight_number }}
+          </h2>
+
+          <div class="details-actions">
+            <button
+              class="track-btn"
+              (click)="trackSelectedFlight()"
+              [disabled]="isTracking"
+            >
+              Track Flight
+            </button>
+
+            <button
+              class="dispatch-btn"
+              (click)="dispatchFlight(selectedFlight)"
+              [disabled]="selectedFlight.status !== 'Scheduled'"
+            >
+              Dispatch Flight
+            </button>
+          </div>
+        </div>
+
+        @if (selectedFlight.status === 'Boarding') {
+          <div class="boarding-banner">
+            <div class="banner-left">
+              <strong>BOARDING</strong>
+              <span class="banner-sub">Time remaining: <span class="countdown">{{ boardingCountdown }}s</span></span>
+            </div>
+
+            <div class="banner-actions">
+              <button class="small-track" (click)="selectFlight(selectedFlight)">Track Live</button>
+            </div>
+          </div>
+        }
+
+        <div class="route-card">
+          <h3>Route</h3>
+          <p>
+            {{ selectedFlight.origin.city }}
+            ✈
+            {{ selectedFlight.destination.city }}
+          </p>
+
+          <ng-template #noRoute>
+            <p>No route information available.</p>
+          </ng-template>
+        </div>
+
+        <div class="info-card">
+          <h3>Status</h3>
+
+          <span
+            class="status"
+            [ngClass]="'status-' + selectedFlight.status.toLowerCase().replace(' ', '-')"
+          >
+            {{ selectedFlight.status }}
+          </span>
+        </div>
+
+        <div class="position-card">
+          <h3>Live Aircraft Position</h3>
+
+          <div class="coordinates">
+            <p>
+              Latitude:
+              {{ selectedFlight.current_latitude || 'Waiting...' }}
+            </p>
+
+            <p>
+              Longitude:
+              {{ selectedFlight.current_longitude || 'Waiting...' }}
+            </p>
+
+            <span class="live"> ● LIVE </span>
+          </div>
+        </div>
+
+        <div class="passenger-card">
+          <h3>Passenger Manifest</h3>
+          @if (selectedFlight.passengers?.length > 0) {
+            <table>
+              <thead>
+                <tr>
+                  <th>Passenger</th>
+                  <th>Seat</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (passenger of selectedFlight.passengers; track passenger.id) {
+                  <tr>
+                    <td>
+                      {{ passenger.first_name }} {{ passenger.last_name }}
+                    </td>
+
+                    <td>
+                      {{ passenger.seat_number }}
+                    </td>
+
+                    <td>
+                      <span
+                        class="boarding-status"
+                        [ngClass]="passenger.boarded ? 'boarded' : 'waiting'"
+                      >
+                        {{ passenger.boarded ? 'Boarded' : 'Waiting' }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          @else {
+            <p class="empty">No passengers on this flight</p>
+          }
+        </div>
+
+        <div class="notifications">
+          <h3>Live Notifications</h3>
+
+          @for (note of notifications; track note.id) {
+            <div class="notification">
+              {{ note.message }}
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
