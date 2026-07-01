@@ -200,8 +200,6 @@ export class Atc implements OnInit {
           passengers: flight.passengers || []
         }));
 
-        console.log('Mapped flights:', this.flights);
-
         //Force UI refresh
         this.cdr.detectChanges();
       } else {
