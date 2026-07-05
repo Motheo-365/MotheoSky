@@ -93,38 +93,6 @@ Server terminal commands include:
 - `KILL <username>`
 - `QUIT`
 
-## File Structure
-
-```
-COS_216_Assignment/
-├── api.php
-├── config.php
-├── users.txt
-├── client/
-│   ├── angular.json
-│   ├── package.json
-│   ├── public/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── app.ts
-│   │   │   ├── app.routes.ts
-│   │   │   ├── pages/
-│   │   │   │   ├── login/
-│   │   │   │   ├── passenger/
-│   │   │   │   └── atc/
-│   │   │   ├── services/
-│   │   │   └── components/
-│   │   └── environments/
-│   └── tsconfig.json
-└── server/
-    ├── package.json
-    └── src/
-        ├── server.js
-        ├── cli/
-        ├── commands/
-        ├── sockets/
-        ├── services/
-        └── state/
 ```
 
 ## Notes
