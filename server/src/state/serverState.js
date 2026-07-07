@@ -1,4 +1,4 @@
-/* Motheo Morena
+/* 
     Central in-memory state store for the Node server
     In memory tracking
  */

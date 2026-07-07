@@ -1,6 +1,4 @@
-/* Motheo Morena
-    Store all active users
-*/
+//  Store all active users
 
 const connections = new Map();
 

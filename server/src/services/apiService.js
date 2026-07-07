@@ -4,6 +4,7 @@ require("dotenv").config();
 const API_URL =
     process.env.API_URL;
 
+// Connect to PHP API
 async function request(payload) {
     try {
         const response = await axios.post(API_URL, payload, {

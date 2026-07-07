@@ -26,6 +26,16 @@ import { LoadingScreen } from '../../components/loading-screen/loading-screen';
   styleUrls: ['./atc.css']
 })
 
+/*
+  ATC dashboard component
+
+  This page:
+  - Retrieves and displayes available flights
+  - Connects to the WebSocket server for live updates
+  - Allows ATCs to dispatch and track flights
+  - Displays passenger boarding notifications
+  - Updates flight information in real time
+*/
 export class Atc implements OnInit {
   protected socket = inject(SocketService);
   private toast = inject(ToastService);
@@ -48,6 +58,8 @@ export class Atc implements OnInit {
   isSelectFlight = false; //load when clicking flight
   isTracking = false;
 
+  // Initialises the page by establishing the WebSocket connection,
+  // subscribing to socket events and loading flights
   ngOnInit(): void {
     const apiKey = localStorage.getItem('api_key');
     const username = localStorage.getItem('username');
@@ -61,6 +73,7 @@ export class Atc implements OnInit {
     this.getFlights();
   }
 
+  // Subscribes to all WebSocket event streams required by the ATC dahboard
   private subscribeSockets(): void {
     /* Dispatch Flight */
     this.socket.dispatchResult$?.pipe(takeUntilDestroyed(this.destroyRef))
@@ -88,7 +101,7 @@ export class Atc implements OnInit {
         }
       });
 
-    /* Tracking Succes */
+    /* Tracking Success */
     this.socket.trackingSuccess$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((msg) => {
@@ -171,6 +184,8 @@ export class Atc implements OnInit {
       });
   }
 
+  // Retrieves all flights from the API
+  // and prepares them for display within the dashboard
   async getFlights(): Promise<void> {
     const apiKey = localStorage.getItem('api_key');
     this.isLoading = true;
@@ -187,8 +202,11 @@ export class Atc implements OnInit {
       console.log('Flights API response:', data);
 
       if (data.status === 'success') {
+        // Retrieve latest flight list from the API
         const list = data?.data?.flights || data?.flights || [];
 
+        // Normalise the flight data so that the component uses consisent property names
+        // regardless of the API response
         this.flights = list.map((flight: any) => ({
           ...flight,
           id: flight.id ?? flight.flight_id,
@@ -200,29 +218,41 @@ export class Atc implements OnInit {
           passengers: flight.passengers || []
         }));
 
-        //Force UI refresh
+        //Force UI refresh after list has been updated
         this.cdr.detectChanges();
-      } else {
+      }
+
+      else {
         this.toast.show(data.message || 'Unable to load flights', 'error');
         this.isLoading = false;
       }
-    } catch (error: any) {
+    }
+
+    catch (error: any) {
       this.toast.show(error?.message || 'Unable to load flights', 'error');
       this.isLoading = false;
-    } finally {
+    }
+
+    finally {
       this.hasLoaded = true;
       this.isLoading = false;
       this.cdr.detectChanges();
     }
   }
 
+  /*
+    Starts the boarding countdown timer and marks any passengers
+    who have not boarded before boarding closes.
+  */
   startBoardingCountdown(): void {
+    // Stop any existing boarding timer
     if (this.boardingTimerInterval) {
       clearInterval(this.boardingTimerInterval);
     }
 
-    this.boardingCountdown = 60;
+    this.boardingCountdown = 60; // New 60-second countdown
 
+    // Reduce the remaining time every second
     this.boardingTimerInterval = setInterval(() => {
       this.zone.run(() => {
         if (this.boardingCountdown > 0) {
@@ -238,6 +268,7 @@ export class Atc implements OnInit {
               (p: any) => !p.boarded
             );
 
+            // Identify passengers who failed to board
             noShows.forEach((p: any) => {
               p.noShow = true;
               this.notifications.unshift({
@@ -253,18 +284,23 @@ export class Atc implements OnInit {
     }, 1000);
   }
 
+  /*
+    Retrieves detailed information for the selected flight,
+    including passenger lists.
+  */
   async selectFlight(flight: any): Promise<void> {
     const apiKey = localStorage.getItem('api_key');
     const flightId = flight.id ?? flight.flight_id;
 
-    this.isTracking = false;
+    this.isTracking = false; // Reset the tracking state while loading
     this.isSelectFlight = true;
     this.isLoading = true;
 
-    this.selectedFlight = flight;
+    this.selectedFlight = flight; // Store selected flight
 
     //fetch full flight details (WITH passengers)
     try {
+      // Request the complete flight details from the API
       const res = await fetch(this.API_URL, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},

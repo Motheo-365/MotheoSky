@@ -25,6 +25,7 @@ export class Login {
   private socketService = inject(SocketService);
   private router = inject(Router);
 
+
   private toastTextFromResponse(response: any, fallback: string) {
     if (typeof response?.data === 'string') {
       return response.data;
@@ -36,6 +37,7 @@ export class Login {
 
     return response?.message ?? fallback;
   }
+
 
   async onLogin() {
     if (!this.username || !this.password) {
@@ -63,7 +65,7 @@ export class Login {
 
         localStorage.setItem("api_key", apiKey);
         localStorage.setItem("user_type", userType);
-        localStorage.setItem("port", this.wsPort);
+        localStorage.setItem("ws_port", this.wsPort);
 
         const userInfo = await me(apiKey);
 

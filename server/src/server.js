@@ -1,5 +1,11 @@
-/* Motheo Morena
-   Starts Node server
+/* 
+   Entry point for the WebSocket server application
+
+   This file:
+   - Determines which port the server should use
+   - Validates command-line and environment configuration
+   - Starts the WebSocker server
+   - Initialises the CLI when running in an interactive terminal
 */
 
 const { initSocketServer } = require("./sockets/socketServer");
@@ -7,11 +13,15 @@ const { handleCommand } = require("./cli/cliHandler");
 const readline = require("readline");
 
 // ==================== PORTS ===============================
+
+// Is port number argument within the valid user application port range
 function isValidPort(port) {
     const num = Number(port);
     return Number.isInteger(num) && num >= 1024 && num <= 49151;
 }
 
+// Retrieve port number supplied through the command line.
+// The application exists if the provided port is invalid
 function getPortFromCli() {
     const cliPort = process.argv[2];
 
@@ -27,6 +37,14 @@ function getPortFromCli() {
     return null;
 }
 
+/*
+    Determines whic port the server should use.
+
+    Priority:
+    1. Command-line argument
+    2. Environment Variable
+    3. Manual user input or default port
+*/
 function getPort() {
     const cliPort = getPortFromCli();
     if (cliPort) return cliPort;
@@ -45,11 +63,14 @@ function getPort() {
     return null;
 }
 
+/*
+    Starts WebSocker server and, when available, initialises the interactive command-line interface.
+*/
 function startApp(port) {
     const host = process.env.HOST || "0.0.0.0";
-    initSocketServer(port, host);
+    initSocketServer(port, host); // Start WebSocker Server
 
-    // Only set up CLI in interactive environments (local development)
+    // Enable the CLI only when runnnig in an interctive terminal
     if (process.stdin.isTTY) {
         const rl = readline.createInterface({
             input: process.stdin,
@@ -58,6 +79,7 @@ function startApp(port) {
 
         console.log("[SERVER] CLI ready. Type a command:\n");
 
+        // Process commands enterd on the CLI
         rl.on("line", (input) => {
             const trimmedInput = input.trim();
             if (!trimmedInput) return;
@@ -69,21 +91,24 @@ function startApp(port) {
             }
         });
 
+        // Shutdown the server when the CLI session ends.
         rl.on("close", () => {
             console.log("\n[SERVER] Shutting down...");
             process.exit(0);
         });
     } else {
+        // Skip CLI initialisation when running in a non-interactive environment
         console.log("[SERVER] Running in non-interactive mode. WebSocket server active.");
     }
 }
 
-// On Terminal load
+// determine which port should be used when application starts
 const port = getPort();
 
 if (port) {
     startApp(port);
 } else if (process.stdin.isTTY) {
+    // Prompt the user for a port if none was provided
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
@@ -100,5 +125,6 @@ if (port) {
         startApp(Number(answer));
     });
 } else {
+    // use default port when running without user interaction
     startApp(8080);
 }
