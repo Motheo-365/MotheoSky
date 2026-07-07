@@ -2,38 +2,59 @@ import { Component, Input, OnInit, OnDestroy, inject, DestroyRef } from '@angula
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as L from 'leaflet';
+
 import { SocketService } from '../../../services/server';
+
+interface FlightUpdate {
+  flightId: number;
+  latitude?: number;
+  longitude?: number;
+  current_latitude?: number;
+  current_longitude?: number;
+  progress?: number;
+  status?: string;
+}
 
 @Component({
   selector: 'app-flight-tracker',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="progress-box" *ngIf="progress > 0">
-      Flight Progress: <strong>{{ progress }}%</strong>
-    </div>
-  `,
-  styleUrls: ['../map.css'] // Reuses progress-box styling configurations safely
+  template: '../flight-tracker.html',
+  styleUrls: ['../map.css'] // Reuses the shared map styling
 })
-export class FlightTrackerComponent implements OnInit, OnDestroy {
-  @Input({ required: true }) map!: L.Map;
 
-  progress = 0;
+/*
+  Displayes and animates the position of a tracked aircraft.
+
+  This component:
+  - Receives a Leaflet map instance from the parent component
+  - Listens for live aircraft position updates
+  - Animates aircraft movement between recieve coordinates
+  - Automatically keeps the aircraft visible on the map
+  - Displays flight progress
+*/
+export class FlightTrackerComponent implements OnInit, OnDestroy {
+  @Input({ required: true }) map!: L.Map; // Leaflet map instance supplied by parent component.
+
+  progress = 0; // Current percentage of flight completion
+
   private socket = inject(SocketService);
   private destroyRef = inject(DestroyRef);
 
-  private aircraftMarker?: L.Marker;
-  private animFrameId: number | null = null;
+  private aircraftMarker?: L.Marker; // Marker representing the tracked aircraft
+  private animFrameId: number | null = null; // current animation frame used for smooth movement.
 
-  ngOnInit() {
+  // Initialises component by subscribing to live aircraft updates
+  ngOnInit(): void {
     this.listenAircraft();
   }
 
+  // Subsribes to aircraft position updates received from the Websocket server.
   private listenAircraft() {
     this.socket.flightUpdate$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((msg) => {
-        console.log("TRACKERAMATION UPDATE:", msg);
+        console.log("TRACKER ANIMATION UPDATE:", msg);
 
         const lat = msg.latitude ?? msg.current_latitude;
         const lng = msg.longitude ?? msg.current_longitude;
@@ -42,6 +63,7 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
 
         const position = L.latLng(Number(lat), Number(lng));
 
+        // Create the aircraft marker the first time a position update is recieved.
         if (!this.aircraftMarker) {
           this.aircraftMarker = L.marker(position, {
             icon: this.aircraftIcon()
@@ -50,12 +72,15 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
           this.map.flyTo(position, 5);
         }
 
+        // Smoothly animate the aircraft towards its new position
         this.animateMarkerTo(position, 1000);
-        //Follow mode, pan when plane leaves visible map
+
+        //Follow mode, pan when plane leaves visible map (Keep aircraft visible if it leaves the current map view)
         if (!this.map.getBounds().contains(position)) {
           this.map.panTo(position);
         }
 
+        // Update flight progress if supplied by the server. Otherwise increment it grafually for visual feedback.
         if (msg.progress !== undefined) {
           this.progress = msg.progress;
         } else {
@@ -64,8 +89,10 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
       });
   }
 
+  // Smoothly animates the aircraft marker between two geographical positions.
   private animateMarkerTo(target: L.LatLng, duration = 800) {
     if (!this.aircraftMarker) return;
+
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
 
     const start = this.aircraftMarker.getLatLng();
@@ -73,7 +100,7 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
 
     const step = (now: number) => {
       const t = Math.min(1, (now - startTime) / duration);
-      const ease = t * (2 - t); // Quad ease-out pathing profile
+      const ease = t * (2 - t); // Quadratic ease-out pathing profile
 
       const lat = start.lat + (target.lat - start.lat) * ease;
       const lng = start.lng + (target.lng - start.lng) * ease;
@@ -88,6 +115,7 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
     this.animFrameId = requestAnimationFrame(step);
   }
 
+  // Creates custom aircraft icon displayed on the map.
   private aircraftIcon() {
     return L.divIcon({
       html: `<div class="aircraft-marker">✈️</div>`,
@@ -98,6 +126,7 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Cleans up animation and removes the aircraft marker when the component is destroyed.
   ngOnDestroy() {
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
     if (this.aircraftMarker) {
