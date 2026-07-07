@@ -1,11 +1,16 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MapComponent } from '../../components/map/map';
+import { Subscription } from 'rxjs';
+
+import { Flight, Passenger} from '../../interfaces/api';
+
+import { ApiService } from '../../services/api';
 import { SocketService } from '../../services/server';
 import { ToastService } from '../../services/toast';
-import { CommonModule } from '@angular/common';
-import { environment } from '../../../environments/environment';
-import { Subscription } from 'rxjs';
+
+import { MapComponent } from '../../components/map/map';
+
 
 @Component({
   selector: 'app-passenger',
@@ -14,29 +19,43 @@ import { Subscription } from 'rxjs';
   templateUrl: './passenger.html',
   styleUrls: ['./passenger.css'],
 })
-export class Passenger implements OnInit, OnDestroy, AfterViewInit {
-  socket = inject(SocketService); // Modern inject pattern consistency
-  toast = inject(ToastService);
-  cdr = inject(ChangeDetectorRef);
-  zone = inject(NgZone);
 
-  flights: any[] = [];
+/*
+  Passenger dashboard component.
+
+  This page:
+  - Retrieves and displays the passenger's booked flights
+  - Connects to the WebSocket server for live flight updates
+  - Allows passengers to track their selected flight
+  - Receives boarding notifications
+  - Allows passengers to board a flight during the boarding window
+*/
+export class PassengerComponent implements OnInit, OnDestroy, AfterViewInit {
+  private api = inject(ApiService);
+  protected socket = inject(SocketService); // Modern inject pattern consistency
+  private toast = inject(ToastService);
+  private cdr = inject(ChangeDetectorRef);
+  private zone = inject(NgZone);
+
+  flights: Flight[] = [];
   username = '';
-  API_URL = environment.apiUrl;
 
   // Tracking state
-  trackedFlight: any = null;
+  trackedFlight: Flight | null = null;
   isTracking = false;
   boardingCountdown = 0;
   isBoardingActive = false;
   isBoarded = false;
-  boardingTimerInterval: any;
+  boardingTimerInterval: number | null = null;
 
   hasLoaded = false;
   errorMessage = '';
 
   private subscriptions: Subscription[] = [];
 
+  /*
+    initialises the passenger dashboard by establishing the Websocket connection and subscribing to real-time events.
+  */
   ngOnInit() {
     const apiKey = localStorage.getItem('api_key');
     const username = localStorage.getItem('username');
@@ -49,7 +68,11 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
     // Keep instant stream registrations here safely
     this.subscribeToSocketUpdates();
   }
-  
+
+  /*
+    Loads the passengers flights once the view has been initialised.
+    A timeout is used to avoid Angulars ExpressionCHangeAfterItHasBeenCheckedError.
+  */
   ngAfterViewInit() {
     // Use setTimeout to push the asynchronous fetch logic cleanly
     // into the next JavaScript VM macro-turn, bypassing the NG0100 guard.
@@ -58,11 +81,17 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
+  /*
+    Cleans up active subsribers and timers when the component is destroyed to prevent memory leaks.
+  */
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     if (this.boardingTimerInterval) clearInterval(this.boardingTimerInterval);
   }
 
+  /*
+    Subsribe to all WebSocket events required by the passenger dahsboard, including flight tracking updates and boarding notifications.
+  */
   private subscribeToSocketUpdates() {
     this.subscriptions.push(
       this.socket.trackingSuccess$.subscribe((msg) => {
@@ -74,10 +103,10 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
     this.subscriptions.push(
       this.socket.flightUpdate$.subscribe((msg) => {
         if (this.trackedFlight && msg.flightId === this.trackedFlight.id) {
-          this.trackedFlight.current_latitude =
+          this.trackedFlight.current_position.latitude =
             msg.latitude ?? msg.current_position?.latitude;
 
-          this.trackedFlight.current_longitude =
+          this.trackedFlight.current_position.longitude =
             msg.longitude ?? msg.current_position?.longitude;
 
           this.trackedFlight.status = msg.status;
@@ -99,6 +128,10 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
     );
   }
 
+  /*
+    Starts the boarding countdown timer.
+    Once the timer expires, boarding closes and the flight transitions to the 'In Flight' state.
+  */
   private startBoardingTimer() {
     if (this.boardingTimerInterval) clearInterval(this.boardingTimerInterval);
 
@@ -111,7 +144,7 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
         }
 
         if (this.boardingCountdown === 0) {
-          clearInterval(this.boardingTimerInterval);
+          if (this.boardingTimerInterval) clearInterval(this.boardingTimerInterval);
           this.isBoardingActive = false;
 
           if (this.trackedFlight) {
@@ -122,6 +155,9 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
     }, 1000);
   }
 
+  /*
+    get all flights booked by the currently subsribed authenticated passenger and prepares them for display within the dashboard.
+  */
   async getFlights() {
       const currentApiKey = localStorage.getItem('api_key');
 
@@ -136,49 +172,19 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
       }
 
       try {
-        const res = await fetch(this.API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'GetAllFlights',
-            api_key: currentApiKey
-          }),
-        });
-
-        //Get raw text first
-        const text = await res.text();
-        //Ttry to parse it
-        let data;
-        try {
-          data = JSON.parse(text);
-        }
-
-        catch(jsonError) {
-          console.error('Backend returned non-JSON HTML: ', text);
-          this.zone.run(() => {
-            this.errorMessage = 'Server error. Check browser console for details.';
-            this.hasLoaded = true;
-            this.cdr.detectChanges();
-          });
-          this.toast.show(this.errorMessage, 'error');
-          return;
-        }
-
-       // const data = await res.json();
+       const data = await this.api.getFlights(currentApiKey);
 
        //Proceed normally if parsing suceeds
         this.zone.run(() => {
           if (data.status === 'success') {
-            const flightList = Array.isArray(data.data)
-              ? data.data
-              : data.data?.flights || [];
+            const flightList =  data.data?.flights || [];
 
-            this.flights = flightList.map((flight: any) => {
+            this.flights = flightList.map((flight: Flight) => {
               const pos = flight.current_position || {};
               return {
                 ...flight,
-                id: flight.id ?? flight.flight_id,
-                flight_id: flight.flight_id ?? flight.id,
+                id: flight.id,
+                flight_id: flight.id,
                 current_latitude: pos.latitude ?? null,
                 current_longitude: pos.longitude ?? null,
               };
@@ -201,13 +207,15 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
       }
     }
 
-  async trackFlight(flight: any) {
+  // Begins tracking the selected flight and requests live position updates from the WebSocker server.
+  async trackFlight(flight: Flight) {
     this.trackedFlight = flight;
     this.isTracking = true;
-    const flightId = flight.id ?? flight.flight_id;
+    const flightId = flight.id;
     this.socket.trackFlight(flightId);
   }
 
+  // Stops tracking the selected flight and resets the passenger tracking state.
   stopTracking() {
     this.isTracking = false;
     this.trackedFlight = null;
@@ -216,6 +224,7 @@ export class Passenger implements OnInit, OnDestroy, AfterViewInit {
     if (this.boardingTimerInterval) clearInterval(this.boardingTimerInterval);
   }
 
+  // Sends a boarding request for the currently tracked flight. Boarding is only permitted while the boarding window is active.
   boardFlight() {
     if (this.trackedFlight) {
       this.socket.boardFlight(this.trackedFlight.id);

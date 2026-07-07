@@ -5,12 +5,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Flight, Passenger} from '../../interfaces/api';
 
-import { MapComponent } from '../../components/map/map';
-import { LoadingScreen } from '../../components/loading-screen/loading-screen';
-
+import { ApiService } from '../../services/api';
 import { SocketService } from '../../services/server';
 import { ToastService } from '../../services/toast';
-import { ApiService } from '../../services/api';
+
+import { MapComponent } from '../../components/map/map';
+import { LoadingScreen } from '../../components/loading-screen/loading-screen';
 
 @Component({
   selector: 'app-atc',
@@ -48,7 +48,7 @@ export class Atc implements OnInit {
   hasLoaded = false;
   errorMessage = '';
 
-  boardingTimerInterval: any = null;
+  boardingTimerInterval: number | null = null;
   boardingCountdown = 0;
   isLoading = true; //initial load
   isSelectFlight = false; //load when clicking flight
@@ -257,7 +257,7 @@ export class Atc implements OnInit {
 
         // Once boarding closes, identify passengers who filed to board
         if (this.boardingCountdown === 0) {
-          clearInterval(this.boardingTimerInterval);
+          if (this.boardingTimerInterval) clearInterval(this.boardingTimerInterval);
           this.boardingTimerInterval = null;
 
           if (this.selectedFlight) {

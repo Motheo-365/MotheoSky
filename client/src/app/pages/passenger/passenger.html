@@ -47,9 +47,9 @@
                 </div>
 
                 <div class="route">
-                    <span>{{ flight.origin_city }}</span>
+                    <span>{{ flight.origin }}</span>
                     ✈
-                    <span>{{ flight.dest_city }}</span>
+                    <span>{{ flight.destination }}</span>
                 </div>
 
                 <div class="departure">
@@ -95,7 +95,7 @@
 
       <div class="info-item">
         <label>Route</label>
-        <p>{{ trackedFlight.origin?.city }} → {{ trackedFlight.destination?.city }}</p>
+        <p>{{ trackedFlight.origin.city }} → {{ trackedFlight.destination.city }}</p>
       </div>
 
       <div class="info-item">
@@ -115,8 +115,8 @@
     <div class="position-info">
       <h3>Live Position</h3>
       <div class="coordinates">
-        <p><strong>Latitude:</strong> {{ trackedFlight.current_latitude || 'N/A' }}</p>
-        <p><strong>Longitude:</strong> {{ trackedFlight.current_longitude || 'N/A' }}</p>
+        <p><strong>Latitude:</strong> {{ trackedFlight.current_position.latitude || 'N/A' }}</p>
+        <p><strong>Longitude:</strong> {{ trackedFlight.current_position.longitude || 'N/A' }}</p>
       </div>
     </div>
 
