@@ -241,7 +241,21 @@
             respond("error", "no airports found", null, 400);
         }
 
-        $airports = $result->fetch_all(MYSQLI_ASSOC);
+        $airports = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $airports[] = [
+                "id" => (int)$row["id"],
+                "name" => $row["code"],
+                "code" => $row["code"],
+                "city" => $row["city"],
+                "country" => $row["country"],
+                "coordinates" => [
+                    "latitude" => (float)$row["latitude"],
+                    "longitude" => (float)$row["longitude"]
+                ]
+            ]
+        }
         respond("success", "airports retrieved successfully", $airports);
     }
 
