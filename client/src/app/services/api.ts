@@ -1,75 +1,127 @@
 import { environment } from '../../environments/environment';
+import { Injectable } from '@angular/core';
+import { ApiResponse, Flight, FlightsData, User, LoginResponse} from '../interfaces/api';
 
-const API_URL = environment.apiUrl;
-//Encode username:password to Base64
+@Injectable ({
+  providedIn: 'root'
+})
 
-async function parseJsonResponse(res: Response) {
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error(`Server returned invalid JSON: ${text}`);
-  }
-}
+/*
+  Provides HTTP communication between the ANgular application and the PHP backend API.
 
-export async function login(username: string, password: string) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      type: "Login",
-      username,
-      password
-    })
-  });
+  This service:
+  - Authenticates users
+  - Retrieves user information
+  - Retrieves flight information
+  - Parses API responses and handles invalid JSON.
+*/
+export class ApiService{
+ private readonly  API_URL = environment.apiUrl;
+  //Encode username:password to Base64
 
-  if (!res.ok) {
+  /*
+    Generic Helper.
+    Parses an HTTP response and converts it into JSON.
+    Throws an error if the server returns invalid JSON.
+  */
+  private async parseJsonResponse<T>(res: Response): Promise<T> {
     const text = await res.text();
-    let payload: any = null;
+
     try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = null;
+      return JSON.parse(text);
     }
 
-    const errorText = typeof payload?.data === 'string'
-      ? payload.data
-      : payload?.message ?? text;
-
-    throw new Error(errorText || `Login failed (${res.status})`);
+    catch {
+      throw new Error(`Server returned invalid JSON: ${text}`);
+    }
   }
 
-  return await parseJsonResponse(res);
+  /*
+    Authenticates a user using their username and password.
+    Throws an error if authentification fails.
+  */
+  async login(username: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    const res = await fetch(this.API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "Login",
+        username,
+        password
+      })
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      let payload: any = null;
+
+      try {
+        payload = JSON.parse(text);
+      }
+      catch {
+        payload = null;
+      }
+
+      const errorText =
+        typeof payload?.data === 'string'
+          ? payload.data
+          : payload?.message ?? text;
+
+      throw new Error(errorText || `Login failed (${res.status})`);
+    }
+
+    return await this.parseJsonResponse<ApiResponse<LoginResponse>>(res);
+  }
+
+  // Retrieves information about the currently authenticated user
+  async me(apiKey: string): Promise<ApiResponse<User>> {
+    const res = await fetch(this.API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "Me",
+        api_key: apiKey
+      })
+    });
+
+    return await this.parseJsonResponse<ApiResponse<User>>(res);
+  }
+
+  // Retrieves all flights that the current user is authorised to view.
+  async getFlights(apiKey: string): Promise<ApiResponse<FlightsData>> {
+    const res = await fetch(this.API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "GetAllFlights",
+        api_key: apiKey
+      })
+    });
+
+    return await this.parseJsonResponse<ApiResponse<FlightsData>>(res);
+  }
+
+  // Retrieves detailed information for a specific flight.
+  async getFlight(apiKey: string, flightId: number): Promise<ApiResponse<Flight>> {
+    const res = await fetch(this.API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "GetFlight",
+        api_key: apiKey,
+        flight_id: flightId
+      })
+    });
+
+    return await this.parseJsonResponse<ApiResponse<Flight>>(res);
+  }
 }
 
-export async function me(apiKey: string) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      type: "Me",
-      api_key: apiKey
-    })
-  });
-
-  return await parseJsonResponse(res);
-}
-
-export async function getFlights(apiKey: string) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      type: "GetAllFlights",
-      api_key: apiKey
-    })
-  });
-
-  return await parseJsonResponse(res);
-}

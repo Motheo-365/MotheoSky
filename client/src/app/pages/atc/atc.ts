@@ -1,22 +1,16 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  DestroyRef,
-  NgZone,
-  ChangeDetectorRef
-} from '@angular/core';
-
+import { Component, OnInit, inject, DestroyRef, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MapComponent } from '../../components/map/map';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+import { Flight, Passenger} from '../../interfaces/api';
+
+import { MapComponent } from '../../components/map/map';
+import { LoadingScreen } from '../../components/loading-screen/loading-screen';
 
 import { SocketService } from '../../services/server';
 import { ToastService } from '../../services/toast';
-import { getFlights } from '../../services/api';
-import { environment } from '../../../environments/environment';
-import { LoadingScreen } from '../../components/loading-screen/loading-screen';
+import { ApiService } from '../../services/api';
 
 @Component({
   selector: 'app-atc',
@@ -38,16 +32,18 @@ import { LoadingScreen } from '../../components/loading-screen/loading-screen';
 */
 export class Atc implements OnInit {
   protected socket = inject(SocketService);
+  private api = inject(ApiService);
   private toast = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
   private zone = inject(NgZone);
   private destroyRef = inject(DestroyRef);
 
-  readonly API_URL = environment.apiUrl;
-
-  flights: any[] = [];
-  selectedFlight: any = null;
-  notifications: any[] = [];
+  flights: Flight[] = [];
+  selectedFlight: Flight | null = null;
+  notifications: {
+    id: number;
+    message: string;
+  }[] = [];
 
   hasLoaded = false;
   errorMessage = '';
@@ -90,7 +86,7 @@ export class Atc implements OnInit {
           const flightId = msg.data?.flight_id ?? msg.data?.flightId ?? msg.data?.id;
           if (flightId) {
             const flight = this.flights.find(
-              f => f.id === flightId || f.flight_id === flightId
+              f => f.id === flightId
             );
             if (flight) {
               flight.status = 'Boarding';
@@ -118,13 +114,13 @@ export class Atc implements OnInit {
       .subscribe((msg) => {
         this.zone.run(() => {
           const selectedFlightId =
-            this.selectedFlight?.id ?? this.selectedFlight?.flight_id;
+            this.selectedFlight?.id ?? this.selectedFlight?.id;
 
           if (this.selectedFlight && msg.flightId === selectedFlightId) {
-            this.selectedFlight.current_latitude =
+            this.selectedFlight.current_position.latitude =
               msg.latitude ?? msg.current_position?.latitude;
 
-            this.selectedFlight.current_longitude =
+            this.selectedFlight.current_position.longitude =
               msg.longitude ?? msg.current_position?.longitude;
 
             this.selectedFlight.status = msg.status;
@@ -144,9 +140,9 @@ export class Atc implements OnInit {
 
           if (this.selectedFlight) {
             const passenger = this.selectedFlight.passengers?.find(
-              (p: any) => p.id === msg.passenger_id
+              (p: Passenger) => p.id === msg.passenger_id
             );
-            if (passenger) passenger.boarded = true;
+            if (passenger) passenger.status = 'Boarded';
           }
         });
       });
@@ -174,7 +170,7 @@ export class Atc implements OnInit {
           });
 
           const selectedFlightId =
-            this.selectedFlight?.id ?? this.selectedFlight?.flight_id;
+            this.selectedFlight?.id ?? this.selectedFlight?.id;
 
           if (this.selectedFlight && msg.flightId === selectedFlightId) {
             this.selectedFlight.status = 'Boarding';
@@ -197,24 +193,24 @@ export class Atc implements OnInit {
     }
 
     try {
-      const data = await getFlights(apiKey);
+      const data = await this.api.getFlights(apiKey);
 
       console.log('Flights API response:', data);
 
       if (data.status === 'success') {
         // Retrieve latest flight list from the API
-        const list = data?.data?.flights || data?.flights || [];
+        const list = data.data?.flights ?? [];
 
         // Normalise the flight data so that the component uses consisent property names
         // regardless of the API response
-        this.flights = list.map((flight: any) => ({
+        this.flights = list.map((flight: Flight) => ({
           ...flight,
-          id: flight.id ?? flight.flight_id,
-          flight_id: flight.flight_id ?? flight.id,
+          flight: flight.id,
+          flight_id: flight.id,
           current_latitude:
-            flight.current_position?.latitude ?? null,
+            flight.current_position.latitude ?? null,
           current_longitude:
-            flight.current_position?.longitude ?? null,
+            flight.current_position.longitude ?? null,
           passengers: flight.passengers || []
         }));
 
@@ -259,21 +255,25 @@ export class Atc implements OnInit {
           this.boardingCountdown--;
         }
 
+        // Once boarding closes, identify passengers who filed to board
         if (this.boardingCountdown === 0) {
           clearInterval(this.boardingTimerInterval);
           this.boardingTimerInterval = null;
 
           if (this.selectedFlight) {
-            const noShows = (this.selectedFlight.passengers || []).filter(
-              (p: any) => !p.boarded
+            const selectedFlight = this.selectedFlight;
+
+            const noShows = (selectedFlight.passengers || []).filter(
+              (p: Passenger) => p.status !== 'Boarded'
             );
 
             // Identify passengers who failed to board
-            noShows.forEach((p: any) => {
-              p.noShow = true;
+            noShows.forEach((p: Passenger) => {
+              p.status = 'No Show';
+
               this.notifications.unshift({
                 id: Date.now() + Math.random(),
-                message: `⚠ ${p.first_name} ${p.last_name} failed to board flight ${this.selectedFlight.flight_number}`
+                message: `⚠ ${p.username} failed to board flight ${selectedFlight.flight_number}`
               });
             });
 
@@ -288,9 +288,9 @@ export class Atc implements OnInit {
     Retrieves detailed information for the selected flight,
     including passenger lists.
   */
-  async selectFlight(flight: any): Promise<void> {
+  async selectFlight(flight: Flight): Promise<void> {
     const apiKey = localStorage.getItem('api_key');
-    const flightId = flight.id ?? flight.flight_id;
+    const flightId = flight.id;
 
     this.isTracking = false; // Reset the tracking state while loading
     this.isSelectFlight = true;
@@ -300,26 +300,16 @@ export class Atc implements OnInit {
 
     //fetch full flight details (WITH passengers)
     try {
-      // Request the complete flight details from the API
-      const res = await fetch(this.API_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          type: 'GetFlight',
-          api_key: apiKey,
-          flight_id: flightId
-        })
-      });
+      const data = await this.api.getFlight(apiKey!, flightId);
 
-      const data = await res.json();
-      if (data.status === 'success') {
+      if (data.status === 'success' && data.data) {
         this.selectedFlight = {
           ...data.data,
           passengers: data.data.passengers || []
         };
       }
       else {
-        this.toast.show(data.message, 'error');
+        this.toast.show(data.message ?? 'Unable to retrieve flight.', 'error');
         this.isLoading = false;
       }
     }
@@ -333,30 +323,37 @@ export class Atc implements OnInit {
     }
   }
 
+  /*
+    Dispatches a scheduled flight through the WebSocket server and records the action in the notifications list.
+  */
   dispatchFlight(flight: any): void {
-    if (flight.status !== 'Scheduled') return;
+    if (flight.status !== 'Scheduled') return; // Only dispatch selected flight(s)
 
     const flightId = flight.id ?? flight.flight_id;
 
-    this.socket.dispatchFlight(flightId);
+    this.socket.dispatchFlight(flightId); // Dispatch using flight Id of selected flight
 
-    this.notifications.unshift({
+    this.notifications.unshift({ // Alert/Message that flight has been dispatched
       id: Date.now(),
       message: `✈ Flight ${flight.flight_number} dispatched`
     });
   }
 
+  /*
+    Begins tracking the currently selected flight and request live position updates from the server
+  */
   trackSelectedFlight(): void {
     if (!this.selectedFlight) return;
 
-    const id = this.selectedFlight.id ?? this.selectedFlight.flight_id;
+    const id = this.selectedFlight?.id;
     console.log("ATC TRACK CLICK:", id);
 
-    // 1. Reset UI attributes immediately (synchronously)
-    this.selectedFlight.current_latitude = null;
-    this.selectedFlight.current_longitude = null;
+    // 1. Clear previous aircraft positions before tracking starts
+    this.selectedFlight.current_position.latitude = null;
+    this.selectedFlight.current_position.longitude = null;
 
     // 2. Wrap all state updates and socket emissions inside the async boundary
+    // Schedule the tracking request for the next event loop tick to ensure the UI updates correctly
     setTimeout(() => {
       this.isTracking = true;
 
@@ -365,6 +362,6 @@ export class Atc implements OnInit {
 
       this.toast.show(`Tracking flight ${id}...`, 'success');
       this.cdr.markForCheck();
-    }, 0);//to push onto next event loop tick
+    }, 0);// to push onto next event loop tick
   }
 }

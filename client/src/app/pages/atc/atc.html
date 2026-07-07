@@ -49,9 +49,9 @@
           </div>
 
           <p>
-            {{ flight.origin_city }}
+            {{ flight.origin }}
             →
-            {{ flight.dest_city }}
+            {{ flight.destination }}
           </p>
 
           <small>
@@ -131,12 +131,12 @@
           <div class="coordinates">
             <p>
               Latitude:
-              {{ selectedFlight.current_latitude || 'Waiting...' }}
+              {{ selectedFlight.current_position.latitude || 'Waiting...' }}
             </p>
 
             <p>
               Longitude:
-              {{ selectedFlight.current_longitude || 'Waiting...' }}
+              {{ selectedFlight.current_position.longitude || 'Waiting...' }}
             </p>
 
             <span class="live"> ● LIVE </span>
@@ -145,7 +145,7 @@
 
         <div class="passenger-card">
           <h3>Passenger Manifest</h3>
-          @if (selectedFlight.passengers?.length > 0) {
+          @if (selectedFlight && (selectedFlight.passengers?.length ?? 0) > 0) {
             <table>
               <thead>
                 <tr>
@@ -159,7 +159,7 @@
                 @for (passenger of selectedFlight.passengers; track passenger.id) {
                   <tr>
                     <td>
-                      {{ passenger.first_name }} {{ passenger.last_name }}
+                      {{ passenger.username }}
                     </td>
 
                     <td>
@@ -169,9 +169,9 @@
                     <td>
                       <span
                         class="boarding-status"
-                        [ngClass]="passenger.boarded ? 'boarded' : 'waiting'"
+                        [ngClass]="passenger.status ? 'boarded' : 'waiting'"
                       >
-                        {{ passenger.boarded ? 'Boarded' : 'Waiting' }}
+                        {{ passenger.status ? 'Boarded' : 'Waiting' }}
                       </span>
                     </td>
                   </tr>
