@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
-import { Flight, Passenger} from '../../interfaces/api';
+import { Flight } from '../../interfaces/api';
 
 import { ApiService } from '../../services/api';
 import { SocketService } from '../../services/server';
