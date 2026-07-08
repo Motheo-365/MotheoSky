@@ -25,6 +25,7 @@ export class SocketService {
   flightUpdate$ = new Subject<FlightUpdateMessage>();
   trackingSuccess$ = new Subject<TrackSuccessMessage>();
   dispatchResult$ = new Subject<DispatchResultMessage>();
+
   boardingStarted$ = new Subject<BoardingStartedMessage>();
   boarded$ = new Subject<PassengerBoardedMessage>();
   boardingResults$ = new Subject<BoardResultMessage>();
@@ -57,13 +58,12 @@ export class SocketService {
         this.dispatchResult$.next(msg as DispatchResultMessage);
         break;
 
-
-      case 'BOARDING_CALL': // Notify subsribers that boarding has started
+      case 'BOARDING_STARTED': // Notify subsribers that boarding has started
         console.log('Boarding started:', msg);
         this.boardingStarted$.next(msg as BoardingStartedMessage);
         break;
 
-      case 'BOARDING_CONFIRMED': // Notify subsribers that a passenger has boarded
+      case 'PASSENGER_BOARDED': // Notify subsribers that a passenger has boarded
         console.log('Passenger boarded:', msg);
         this.boarded$.next(msg as PassengerBoardedMessage);
         break;
@@ -78,6 +78,7 @@ export class SocketService {
         break;
 
       case 'ERROR':
+        this.error$.next(msg as ErrorMessage);
         console.error('Server error:', this.error$.next(msg));
         break;
 

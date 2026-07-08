@@ -31,13 +31,13 @@ export interface BoardingStartedMessage {
 export interface PassengerBoardedMessage {
     type: 'PASSENGER_BOARDED';
     flightId: number;
-    passenger: string;
+    passenger: string; // Shows username
 }
 
 export interface NoShowMessage {
     type: 'NO_SHOW';
     flightId: number;
-    message: string;
+    passenger: string; // Shows username
 }
 
 export interface ErrorMessage {

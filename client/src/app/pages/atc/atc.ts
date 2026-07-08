@@ -11,6 +11,7 @@ import { ToastService } from '../../services/toast';
 
 import { MapComponent } from '../../components/map/map';
 import { LoadingScreen } from '../../components/loading-screen/loading-screen';
+import { FlightUpdateMessage, TrackSuccessMessage, DispatchResultMessage, BoardingStartedMessage, NoShowMessage, PassengerBoardedMessage } from '../../interfaces/socket';
 
 @Component({
   selector: 'app-atc',
@@ -71,30 +72,19 @@ export class Atc implements OnInit {
 
   // Subscribes to all WebSocket event streams required by the ATC dahboard
   private subscribeSockets(): void {
-    /* Dispatch Flight */
-    this.socket.dispatchResult$?.pipe(takeUntilDestroyed(this.destroyRef))
+    /* --- Flight updates --- */
+    this.socket.flightUpdate$
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((msg) => {
-        if (msg.data?.status === 'success') {
-          this.toast.show('Flight dispatched successfully', 'success');
+        this.zone.run(() => {
+          const selectedFlightId =
+            this.selectedFlight?.id ?? this.selectedFlight?.id;
 
-          //update selected
-          if (this.selectedFlight) {
-            this.selectedFlight.status = 'Boarding'; // reflect immediately
+          if (this.selectedFlight && msg.flightId === selectedFlightId) {
+           this.selectedFlight.current_position.latitude = msg.latitude;
+           this.selectedFlight.current_position.longitude = msg.longitude;
           }
-
-          //update list
-          const flightId = msg.data?.flight_id ?? msg.data?.flightId ?? msg.data?.id;
-          if (flightId) {
-            const flight = this.flights.find(
-              f => f.id === flightId
-            );
-            if (flight) {
-              flight.status = 'Boarding';
-            }
-          }
-        } else {
-          this.toast.show('Dispatch failed', 'error');
-        }
+        });
       });
 
     /* Tracking Success */
@@ -108,61 +98,32 @@ export class Atc implements OnInit {
         });
       });
 
-    /* --- Aircraft updates --- */
-    this.socket.flightUpdate$
+    /* Dispatch Flight */
+    this.socket.dispatchResult$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((msg) => {
-        this.zone.run(() => {
-          const selectedFlightId =
-            this.selectedFlight?.id ?? this.selectedFlight?.id;
+        if (msg.data?.status === 'success') {
+          this.toast.show('Flight dispatched successfully', 'success');
 
-          if (this.selectedFlight && msg.flightId === selectedFlightId) {
-            this.selectedFlight.current_position.latitude =
-              msg.latitude ?? msg.current_position?.latitude;
-
-            this.selectedFlight.current_position.longitude =
-              msg.longitude ?? msg.current_position?.longitude;
-
-            this.selectedFlight.status = msg.status;
-          }
-        });
-      });
-
-    /* --- Passenger boarded --- */
-    this.socket.boardingConfirmed$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((msg) => {
-        this.zone.run(() => {
-          this.notifications.unshift({
-            id: Date.now(),
-            message: `✓ ${msg.passenger_name} boarded flight ${msg.flightId}`
-          });
-
+          //update selected
           if (this.selectedFlight) {
-            const passenger = this.selectedFlight.passengers?.find(
-              (p: Passenger) => p.id === msg.passenger_id
-            );
-            if (passenger) passenger.status = 'Boarded';
+            this.selectedFlight.status = 'Boarding'; // reflect immediately
           }
-        });
-      });
 
-    /* --- Passenger no-show --- */
-    this.socket.noShow$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((msg) => {
-        this.zone.run(() => {
-          this.notifications.unshift({
-            id: Date.now(),
-            message: `⚠ ${msg.passenger_name} failed to board flight ${msg.flightId}`
-          });
-        });
+          //update list
+          if (this.selectedFlight) {
+            this.selectedFlight.status = 'Boarding';
+          }
+          this.flights.find( f => f.id === this.selectedFlight?.id )!.status = 'Boarding';
+        } else {
+          this.toast.show('Dispatch failed', 'error');
+        }
       });
 
     /* --- Boarding started --- */
-    this.socket.boardingNotification$
+    this.socket.boardingStarted$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((msg) => {
+      .subscribe((msg: BoardingStartedMessage) => {
         this.zone.run(() => {
           this.notifications.unshift({
             id: Date.now(),
@@ -176,6 +137,37 @@ export class Atc implements OnInit {
             this.selectedFlight.status = 'Boarding';
             this.startBoardingCountdown();
           }
+        });
+      });
+
+    /* --- Passenger boarded --- */
+    this.socket.boarded$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((msg: PassengerBoardedMessage) => {
+        this.zone.run(() => {
+          this.notifications.unshift({
+            id: Date.now(),
+            message: `✓ ${msg.passenger} boarded flight ${msg.flightId}`
+          });
+
+          if (this.selectedFlight) {
+            const passenger = this.selectedFlight.passengers?.find(
+              (p: Passenger) => p.username === msg.passenger
+            );
+            if (passenger) passenger.status = 'Boarded';
+          }
+        });
+      });
+
+    /* --- Passenger no-show --- */
+    this.socket.noShow$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((msg: NoShowMessage) => {
+        this.zone.run(() => {
+          this.notifications.unshift({
+            id: Date.now(),
+            message: `⚠ ${msg.passenger} failed to board flight ${msg.flightId}`
+          });
         });
       });
   }
