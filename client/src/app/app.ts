@@ -9,5 +9,5 @@ import { Toast } from "./components/toast/toast";
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('first-ng-app');
+  protected readonly title = signal('client');
 }

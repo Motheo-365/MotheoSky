@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "first-ng-app": {
+    "client": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -63,10 +63,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "first-ng-app:build:production"
+              "buildTarget": "client:build:production"
             },
             "development": {
-              "buildTarget": "first-ng-app:build:development"
+              "buildTarget": "client:build:development"
             }
           },
           "defaultConfiguration": "development"
