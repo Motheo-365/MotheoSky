@@ -252,7 +252,7 @@
                 "country" => $row["country"],
                 "coordinates" => [
                     "latitude" => (float)$row["latitude"],
-                    "longitude" => (float)$row["longitude"]
+                    "longitude" => (float)$row
                 ]
             ]
         }
