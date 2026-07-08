@@ -1,9 +1,10 @@
-<h1>Login</h1>
  @if (isLoading) {
   <app-loading-screen [visible]="isLoading"></app-loading-screen>
  }
 <div class="login-container">
   <form class="signup-form" (ngSubmit)="onLogin()">
+    <h1>Login</h1>
+    <span class="subtitle">Check console for Login Details</span>
 
     <div id="errorBox" style="color:red;"></div>
 
