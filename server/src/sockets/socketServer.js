@@ -364,7 +364,7 @@ function handleMessage(type, data, context) {
 
                 if (s && s.user?.role === "ATC") {
                     s.send(JSON.stringify({
-                        type: "PASSENGER_BOARDED",
+                        type: "BOARDING_CONFIRMED",
                         flightId: data.flightId,
                         passenger: socket.user.username
                     }));

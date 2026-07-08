@@ -93,6 +93,7 @@ export class PassengerComponent implements OnInit, OnDestroy, AfterViewInit {
     Subsribe to all WebSocket events required by the passenger dahsboard, including flight tracking updates and boarding notifications.
   */
   private subscribeToSocketUpdates() {
+    //  Tracking SUccess
     this.subscriptions.push(
       this.socket.trackingSuccess$.subscribe((msg) => {
         this.isTracking = true;
@@ -100,22 +101,31 @@ export class PassengerComponent implements OnInit, OnDestroy, AfterViewInit {
       })
     );
 
+    // Flight Updates
     this.subscriptions.push(
       this.socket.flightUpdate$.subscribe((msg) => {
         if (this.trackedFlight && msg.flightId === this.trackedFlight.id) {
-          this.trackedFlight.current_position.latitude =
-            msg.latitude ?? msg.current_position?.latitude;
+          this.trackedFlight.current_position.latitude = msg.latitude;
 
-          this.trackedFlight.current_position.longitude =
-            msg.longitude ?? msg.current_position?.longitude;
+          this.trackedFlight.current_position.longitude = msg.longitude;
 
           this.trackedFlight.status = msg.status;
+        }
+        if (msg.status === 'Boarding' && !this.isBoardingActive) {
+          this.isBoardingActive = true;
+          this.startBoardingTimer();
+        }
+        if (msg.status === 'In Flight') {
+          this.isBoardingActive = false;
         }
       })
     );
 
+    //
     this.subscriptions.push(
-      this.socket.boardingNotification$.subscribe((msg) => {
+      this.socket.boardingStarted$.subscribe((msg) => {
+        console.log("BOARDING EVENT RECEIVED", msg);
+
         this.zone.run(() => {
           if (this.trackedFlight && msg.flightId === this.trackedFlight.id) {
             this.trackedFlight.status = 'Boarding';
@@ -123,6 +133,34 @@ export class PassengerComponent implements OnInit, OnDestroy, AfterViewInit {
             this.boardingCountdown = 60;
             this.startBoardingTimer();
           }
+        });
+      })
+    );
+
+    // boarded
+    this.subscriptions.push(
+      this.socket.boardingResults$.subscribe((msg) => {
+        this.zone.run(() => {
+
+          if (msg.data.status === 'success') {
+            this.isBoarded = true;
+            this.isBoardingActive = false;
+
+            if (this.boardingTimerInterval) {
+              clearInterval(this.boardingTimerInterval);
+            }
+
+            this.toast.show(
+              msg.data.message ?? 'Boarding successful.',
+              'success'
+            );
+          } else {
+            this.toast.show( // no show
+              msg.data.message ?? 'Unable to board flight.',
+              'error'
+            );
+          }
+
         });
       })
     );
@@ -228,9 +266,6 @@ export class PassengerComponent implements OnInit, OnDestroy, AfterViewInit {
   boardFlight() {
     if (this.trackedFlight) {
       this.socket.boardFlight(this.trackedFlight.id);
-      this.isBoarded = true;
-      this.isBoardingActive = false;
-      if (this.boardingTimerInterval) clearInterval(this.boardingTimerInterval);
     }
   }
 }

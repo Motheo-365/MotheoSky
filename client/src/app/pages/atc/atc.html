@@ -38,7 +38,7 @@
       @for (flight of flights; track flight.id) {
         <div class="flight-card" (click)="selectFlight(flight)">
           <div class="flight-top">
-            <strong> ✈ {{ flight.flight_number }} </strong>
+            <strong>{{ flight.flight_number }} </strong>
 
             <span
               class="status"
@@ -49,9 +49,9 @@
           </div>
 
           <p>
-            {{ flight.origin }}
+            {{ flight.origin.name }}
             →
-            {{ flight.destination }}
+            {{ flight.destination.name }}
           </p>
 
           <small>
@@ -105,7 +105,7 @@
           <h3>Route</h3>
           <p>
             {{ selectedFlight.origin.city }}
-            ✈
+            →
             {{ selectedFlight.destination.city }}
           </p>
 

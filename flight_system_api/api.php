@@ -260,7 +260,7 @@
     }
 
     function boardFlight($data, $db){
-        $apiKey = $data['api_key'] ?? null;
+        $apiKey = $dataF['api_key'] ?? null;
         $flightId = $data['flight_id'] ?? null;
         
         if (!$apiKey || !$flightId) {

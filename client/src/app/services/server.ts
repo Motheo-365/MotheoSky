@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
+
+import { FlightUpdateMessage, TrackSuccessMessage, DispatchResultMessage, BoardResultMessage, BoardingStartedMessage, PassengerBoardedMessage, NoShowMessage, ErrorMessage } from '../interfaces/socket';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -20,12 +22,14 @@ export class SocketService {
   private lastPort!: number;
 
   // Subjects used to broadcast WebSocket events to subsribed components
-  flightUpdate$ = new Subject<any>();
-  trackingSuccess$ = new Subject<any>();
-  boardingNotification$ = new Subject<any>(); // Keeps support for general boarding starts
-  boardingConfirmed$ = new Subject<any>();    // Triggers when an individual passenger boards
-  noShow$ = new Subject<any>();               // Triggers on passenger missing flight
-  dispatchResult$ = new Subject<any>();
+  flightUpdate$ = new Subject<FlightUpdateMessage>();
+  trackingSuccess$ = new Subject<TrackSuccessMessage>();
+  dispatchResult$ = new Subject<DispatchResultMessage>();
+  boardingStarted$ = new Subject<BoardingStartedMessage>();
+  boarded$ = new Subject<PassengerBoardedMessage>();
+  boardingResults$ = new Subject<BoardResultMessage>();
+  noShow$ = new Subject<NoShowMessage>();
+  error$ = new Subject<ErrorMessage>();
 
   // Processes incoming WebSocket messages and publishes the appropriate events for application components
   private handleMessage(msg: any): void {
@@ -40,33 +44,33 @@ export class SocketService {
 
       case 'TRACK_SUCCESS':
         console.log('Now tracking flight:', msg.flightId);
-        this.trackingSuccess$.next(msg);
+        this.trackingSuccess$.next(msg as TrackSuccessMessage);
         break;
 
       case 'FLIGHT_UPDATE': // Publish live flight position update.
         console.log('Live update:', msg);
-        this.flightUpdate$.next(msg);
+        this.flightUpdate$.next(msg as FlightUpdateMessage);
         break;
 
       case 'DISPATCH_RESULT': // Publish the result of a Dispatch reques
         console.log('Dispatch result:', msg);
-        this.dispatchResult$.next(msg);
+        this.dispatchResult$.next(msg as DispatchResultMessage);
         break;
 
 
-      case 'BOARDING_STARTED': // Notify subsribers that boarding has started
+      case 'BOARDING_CALL': // Notify subsribers that boarding has started
         console.log('Boarding started:', msg);
-        this.boardingNotification$.next(msg);
+        this.boardingStarted$.next(msg as BoardingStartedMessage);
         break;
 
       case 'BOARDING_CONFIRMED': // Notify subsribers that a passenger has boarded
         console.log('Passenger boarded:', msg);
-        this.boardingConfirmed$.next(msg);
+        this.boarded$.next(msg as PassengerBoardedMessage);
         break;
 
       case 'NO_SHOW': // Notify subscribers that a passenger did not board.
         console.log('Passenger no-show:', msg);
-        this.noShow$.next(msg);
+        this.noShow$.next(msg as NoShowMessage);
         break;
 
       case 'AUTH_FAILED':
@@ -74,7 +78,7 @@ export class SocketService {
         break;
 
       case 'ERROR':
-        console.error('Server error:', msg.message);
+        console.error('Server error:', this.error$.next(msg));
         break;
 
       case 'KILLED': // Handle forced server disconnections
