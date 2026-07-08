@@ -24,7 +24,7 @@
         }
     }
 
-    loadEnv(_DIR_ . '/.env');
+    loadEnv(__DIR__ . '/.env');
 
     //Local Database Connection
     $host = $_ENV['DB_HOST'];
