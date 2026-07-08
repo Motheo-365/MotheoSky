@@ -16,7 +16,7 @@ The application supports:
 
 ## Client
 
-*** NOTE: Use client information in users.txt to login ***
+*** NOTE: Check Console for Test Login Details ***
 
 The Angular client includes:
 

@@ -1,11 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api';
 import { SocketService } from '../../services/server';
 import { ToastService } from '../../services/toast';
 import { Router } from '@angular/router'
 import { LoadingScreen } from '../../components/loading-screen/loading-screen';
-import { ApiResponse } from '../../interfaces/api';
 
 @Component({
   selector: 'app-login',
@@ -27,6 +26,24 @@ export class LoginComponent {
   private router = inject(Router);
   private api = inject(ApiService);
 
+  ngOnInit(): void {
+    console.clear();
+
+    console.log('%c=== TEST LOGIN DETAILS ===', 'color:#00bcd4;font-size:16px;font-weight:bold;');
+    console.log('%cATC', 'color:#4CAF50;font-weight:bold;');
+    console.log('Username: amber.blue26');
+    console.log('Password: AmberBlu3$');
+
+    console.log('');
+
+    console.log('%cPassenger', 'color:#2196F3;font-weight:bold;');
+    console.log('Username: tasha.duncan28');
+    console.log('Password: Test123#45');
+
+    console.log('');
+    console.log('Enter your WebSocket server port before logging in.');
+  }
+  
   async onLogin() {
     if (!this.username || !this.password) {
       this.toast.show('Enter username and password', 'error');

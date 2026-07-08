@@ -56,8 +56,8 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
       .subscribe((msg) => {
         console.log("TRACKER ANIMATION UPDATE:", msg);
 
-        const lat = msg.latitude ?? msg.current_latitude;
-        const lng = msg.longitude ?? msg.current_longitude;
+        const lat = msg.latitude;
+        const lng = msg.longitude;
 
         if (lat == null || lng == null) return;
 
@@ -81,11 +81,7 @@ export class FlightTrackerComponent implements OnInit, OnDestroy {
         }
 
         // Update flight progress if supplied by the server. Otherwise increment it grafually for visual feedback.
-        if (msg.progress !== undefined) {
-          this.progress = msg.progress;
-        } else {
-          this.progress = Math.min(100, this.progress + 2);
-        }
+        this.progress = Math.min(100, this.progress + 2);
       });
   }
 
