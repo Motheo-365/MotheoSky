@@ -246,7 +246,7 @@
         while ($row = $result->fetch_assoc()) {
             $airports[] = [
                 "id" => (int)$row["id"],
-                "name" => $row["code"],
+                "name" => $row["name"],
                 "code" => $row["code"],
                 "city" => $row["city"],
                 "country" => $row["country"],
