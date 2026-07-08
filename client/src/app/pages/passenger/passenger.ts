@@ -47,6 +47,8 @@ export class PassengerComponent implements OnInit, OnDestroy, AfterViewInit {
   isBoardingActive = false;
   isBoarded = false;
   boardingTimerInterval: number | null = null;
+  isSelectFlight = false; //load when clicking flight
+  isLoading = false;
 
   hasLoaded = false;
   errorMessage = '';
@@ -164,6 +166,41 @@ export class PassengerComponent implements OnInit, OnDestroy, AfterViewInit {
         });
       })
     );
+  }
+
+  async selectFlight(flight: Flight): Promise<void> {
+    const apiKey = localStorage.getItem('api_key');
+    const flightId = flight.id;
+
+    this.isTracking = false; // Reset the tracking state while loading
+    this.isSelectFlight = true;
+    this.isLoading = true;
+
+    this.trackedFlight = flight; // Store selected flight
+
+    //fetch full flight details (WITH passengers)
+    try {
+      const data = await this.api.getFlight(apiKey!, flightId);
+
+      if (data.status === 'success' && data.data) {
+        this.trackedFlight = {
+          ...data.data,
+          passengers: data.data.passengers || []
+        };
+      }
+      else {
+        this.toast.show(data.message ?? 'Unable to retrieve flight.', 'error');
+        this.isLoading = false;
+      }
+    }
+    catch (err) {
+      console.error(err);
+      this.isLoading = false;
+    }
+    finally {
+      this.isLoading = false;
+      this.isSelectFlight = false;
+    }
   }
 
   /*

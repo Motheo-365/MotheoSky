@@ -3,210 +3,147 @@
 =========================== */
 
 .passenger-page {
-    max-width: 1400px;
-    margin: auto;
-    padding: 2rem;
-    color: #1e293b;
-    animation: fadeIn .35s ease;
+  max-width: 1400px;
+  margin: auto;
+  padding: 2rem;
+  color: #1e293b;
+  animation: fadeIn 0.35s ease;
 }
 
-.passenger-page h1{
-    margin:0;
-    font-size:2.2rem;
-    font-weight:700;
+.passenger-page h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 700;
 }
 
 /* ===========================
    Flights List
 =========================== */
 
-.flights{
-    margin-top:2rem;
+.flights {
+  margin-top: 2rem;
 }
 
-.flights ul{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
-    gap:1.5rem;
+.flights ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
 
-    padding:0;
-    list-style:none;
+  padding: 0;
+  list-style: none;
 }
 
-.flights li{
-
-    background:white;
-    border-radius:18px;
-
-    padding:1.4rem;
-
-    cursor:pointer;
-
-    border:1px solid #e5e7eb;
-
-    transition:.25s;
-
-    box-shadow:
-        0 6px 18px rgba(0,0,0,.05);
-
-    position:relative;
-
-    overflow:hidden;
+.flights li {
+  background: white;
+  border-radius: 18px;
+  padding: 1.4rem;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  transition: 0.25s;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
 }
 
-.flights li::before{
+.flights li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;  width: 6px;
+  height: 100%;
 
-    content:"";
-
-    position:absolute;
-
-    top:0;
-    left:0;
-
-    width:6px;
-    height:100%;
-
-    background:#2563eb;
+  background: #2563eb;
 }
 
-.flights li:hover{
-
-    transform:translateY(-8px);
-
-    box-shadow:
-        0 16px 32px rgba(0,0,0,.12);
-
-    border-color:#2563eb;
+.flights li:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+  border-color: #2563eb;
 }
 
-.flights li strong{
-
-    display:block;
-
-    color:#2563eb;
-
-    font-size:1.45rem;
-
-    margin-bottom:.8rem;
+.flights li strong {
+  display: block;
+  color: #2563eb;
+  font-size: 1.45rem;
+  margin-bottom: 0.8rem;
 }
 
-.flights li{
-
-    line-height:1.8;
+.flights li {
+  line-height: 1.8;
 }
 
 /* ===========================
    Tracking
 =========================== */
 
-.tracking-container{
-
-    background:white;
-
-    border-radius:20px;
-
-    padding:2rem;
-
-    box-shadow:
-        0 12px 32px rgba(0,0,0,.08);
+.tracking-container {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
-.tracking-header{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    margin-bottom:2rem;
-
-    border-bottom:1px solid #e5e7eb;
-
-    padding-bottom:1.5rem;
+.tracking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1.5rem;
 }
 
-.stop-tracking-btn{
-
-    background:#2563eb;
-
-    color:white;
-
-    border:none;
-
-    padding:.9rem 1.5rem;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    transition:.25s;
+.stop-tracking-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.9rem 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.25s;
 }
 
-.stop-tracking-btn:hover{
-
-    background:#1d4ed8;
-
-    transform:translateY(-2px);
+.stop-tracking-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
 }
 
 /* ===========================
    Flight Cards
 =========================== */
 
-.flight-info{
-
-    display:grid;
-
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-
-    gap:1.4rem;
-
-    margin-bottom:2rem;
+.flight-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.4rem;
+  margin-bottom: 2rem;
 }
 
-.info-item{
-
-    background:#f8fafc;
-
-    border-radius:14px;
-
-    padding:1.3rem;
-
-    border:1px solid #e5e7eb;
-
-    transition:.25s;
+.info-item {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 1.3rem;
+  border: 1px solid #e5e7eb;
+  transition: 0.25s;
 }
 
-.info-item:hover{
-
-    transform:translateY(-4px);
-
-    box-shadow:0 10px 20px rgba(0,0,0,.08);
+.info-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
 }
 
-.info-item label{
-
-    display:block;
-
-    color:#64748b;
-
-    text-transform:uppercase;
-
-    font-size:.75rem;
-
-    letter-spacing:1px;
-
-    margin-bottom:.5rem;
+.info-item label {
+  display: block;
+  color: #64748b;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
 }
 
-.info-item p{
-
-    margin:0;
-
-    font-size:1.15rem;
-
-    font-weight:600;
+.info-item p {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
 }
 
 /* ===========================
@@ -216,303 +153,228 @@
 .status-scheduled,
 .status-boarding,
 .status-in-flight,
-.status-landed{
-
-    display:inline-flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    padding:.55rem 1rem;
-
-    border-radius:999px;
-
-    font-weight:700;
+.status-landed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-weight: 700;
 }
 
-.status-scheduled{
-
-    background:#e2e8f0;
-
-    color:#475569;
+.status-scheduled {
+  background: #e2e8f0;
+  color: #475569;
 }
 
-.status-boarding{
-
-    background:#fef3c7;
-
-    color:#b45309;
-
-    animation:pulse 1.4s infinite;
+.status-boarding {
+  background: #fef3c7;
+  color: #b45309;
+  animation: pulse 1.4s infinite;
 }
 
-.status-in-flight{
-
-    background:#dbeafe;
-
-    color:#2563eb;
+.status-in-flight {
+  background: #dbeafe;
+  color: #2563eb;
 }
 
-.status-landed{
-
-    background:#dcfce7;
-
-    color:#15803d;
+.status-landed {
+  background: #dcfce7;
+  color: #15803d;
 }
 
 /* ===========================
    Live Position
 =========================== */
 
-.position-info{
-
-    background:linear-gradient(135deg,#2563eb,#1d4ed8);
-
-    color:white;
-
-    border-radius:18px;
-
-    padding:1.8rem;
-
-    margin-bottom:2rem;
+.position-info {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  border-radius: 18px;
+  padding: 1.8rem;
+  margin-bottom: 2rem;
 }
 
-.position-info h3{
-
-    margin-top:0;
+.position-info h3 {
+  margin-top: 0;
 }
 
-.coordinates{
-
-    margin-top:1rem;
-
-    background:rgba(255,255,255,.12);
-
-    border-radius:12px;
-
-    padding:1rem;
-
-    font-family:monospace;
-
-    backdrop-filter:blur(5px);
+.coordinates {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 1rem;
+  font-family: monospace;  backdrop-filter: blur(5px);
 }
 
-.coordinates p{
-
-    margin:.4rem 0;
+.coordinates p {
+  margin: 0.4rem 0;
 }
 
 /* ===========================
    Boarding
 =========================== */
 
-.boarding-alert{
-
-    background:linear-gradient(135deg,#ff8a00,#ff5f00);
-
-    color:white;
-
-    border-radius:22px;
-
-    padding:2.5rem;
-
-    text-align:center;
-
-    box-shadow:0 20px 40px rgba(255,115,0,.35);
-
-    animation:slideIn .35s ease;
+.boarding-banner {
+  margin-top: 3%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #fff7ed, #fffbeb);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #f59e0b;
+  grid-column: 1 / -1;
 }
 
-.boarding-alert h2{
-
-    font-size:2.2rem;
-
-    margin-bottom:1rem;
-
-    animation:pulse 1.2s infinite;
+.boarding-alert {
+  background: linear-gradient(135deg, #ff00000d, #7f0000);
+  color: white;
+  border-radius: 22px;
+  height: 5%;
+  max-height: 250px;
+  text-align: center;
+  border: solid 2px rgb(167, 0, 0);
+  box-shadow: 0 10px 20px rgba(255, 0, 0, 0.35);
+  animation: slideIn 0.35s ease;
+  margin-bottom: 4%;
 }
 
-.countdown{
-
-    font-size:1.35rem;
+.boarding-alert h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  animation: pulse 1.2s infinite;
 }
 
-.countdown strong{
-
-    display:block;
-
-    margin-top:.6rem;
-
-    font-size:4rem;
-
-    font-weight:800;
+.countdown {
+  font-size: 1rem;
 }
 
-.board-btn{
-
-    margin-top:2rem;
-
-    background:white;
-
-    color:#ff5f00;
-
-    border:none;
-
-    padding:1rem 3rem;
-
-    border-radius:999px;
-
-    font-size:1.1rem;
-
-    font-weight:700;
-
-    cursor:pointer;
-
-    transition:.25s;
+.countdown strong {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 2rem;
+  font-weight: 800;
 }
 
-.board-btn:hover:not(:disabled){
-
-    transform:scale(1.08);
-
-    box-shadow:0 12px 24px rgba(0,0,0,.25);
+.board-btn {
+  background: white;
+  color: #911717;
+  border: none;
+  padding: 1rem 3rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s;
 }
 
-.board-btn:disabled{
-
-    background:#d1d5db;
-
-    color:#6b7280;
-
-    cursor:not-allowed;
+.board-btn:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
 }
 
-.warning{
+.board-btn:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
 
-    margin-top:1.5rem;
-
-    font-weight:600;
+.warning {
+  margin-top: 1.5rem;
+  font-weight: 600;
 }
 
 /* ===========================
    Success
 =========================== */
 
-.boarded-confirmation{
-
-    margin-top:2rem;
-
-    background:#16a34a;
-
-    color:white;
-
-    padding:1.5rem;
-
-    border-radius:15px;
-
-    text-align:center;
-
-    font-weight:700;
-
-    box-shadow:0 12px 24px rgba(22,163,74,.3);
+.boarded-confirmation {
+  margin-top: 2rem;
+  background: #16a34a;
+  color: white;
+  padding: 1.5rem;
+  border-radius: 15px;
+  text-align: center;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(22, 163, 74, 0.3);
 }
 
 /* ===========================
    Empty State
 =========================== */
 
-.empty-state{
-
-    text-align:center;
-
-    padding:4rem;
-
-    color:#64748b;
-
-    background:white;
-
-    border-radius:18px;
-
-    border:1px dashed #cbd5e1;
+.empty-state {
+  text-align: center;
+  padding: 4rem;
+  color: #64748b;
+  background: white;
+  border-radius: 18px;
+  border: 1px dashed #cbd5e1;
 }
 
 /* ===========================
    Animations
 =========================== */
 
-@keyframes fadeIn{
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
 
-    from{
-        opacity:0;
-        transform:translateY(15px);
-    }
-
-    to{
-        opacity:1;
-        transform:none;
-    }
-
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-@keyframes slideIn{
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
 
-    from{
-        transform:translateY(-20px);
-        opacity:0;
-    }
-
-    to{
-        transform:none;
-        opacity:1;
-    }
-
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
 
-@keyframes pulse{
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
 
-    0%{
-        transform:scale(1);
-    }
+  50% {
+    transform: scale(1.05);
+  }
 
-    50%{
-        transform:scale(1.05);
-    }
-
-    100%{
-        transform:scale(1);
-    }
-
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ===========================
    Mobile
 =========================== */
 
-@media(max-width:768px){
+@media (max-width: 768px) {
+  .tracking-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 
-    .tracking-header{
+  .stop-tracking-btn {
+    width: 100%;
+  }
 
-        flex-direction:column;
+  .countdown strong {
+    font-size: 3rem;
+  }
 
-        align-items:flex-start;
-
-        gap:1rem;
-    }
-
-    .stop-tracking-btn{
-
-        width:100%;
-    }
-
-    .countdown strong{
-
-        font-size:3rem;
-    }
-
-    .board-btn{
-
-        width:100%;
-    }
-
+  .board-btn {
+    width: 100%;
+  }
 }

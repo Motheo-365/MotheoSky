@@ -25,7 +25,6 @@
     appropriate API endpoints.
   -->
 <div class="passenger-page">
-
   <!-- Flights List View -->
   @if (!trackedFlight) {
     <div class="flights-container">
@@ -84,8 +83,34 @@
         <h1>Tracking Flight {{ trackedFlight.flight_number }}</h1>
         <button class="stop-tracking-btn" (click)="stopTracking()">← Back to Flights</button>
       </div>
-      <app-map [flights]="flights"></app-map>
+    <!-- Boarding Notification -->
+    @if (trackedFlight.status === 'Boarding') {
+      <div class="boarding-section">
+      </div>
 
+        @if (trackedFlight.status === 'Boarding') {
+          <div class="boarding-alert">
+            <h2>FLIGHT BOARDING STARTED.</h2>
+            <p class="countdown">Time remaining: <strong class="countdown">{{ boardingCountdown }}s</strong></p>
+            <button class="board-btn" (click)="boardFlight()" [disabled]="isBoarded">
+              {{ isBoarded ? 'Boarded' : 'BOARD FLIGHT' }}
+            </button>
+            @if (!isBoarded) {
+              <p class="warning">
+                You must board within 60 seconds or be marked as a no-show.
+              </p>
+            }
+          </div>
+        }
+
+    }
+
+    <!-- Boarded Confirmation -->
+    @if (isBoarded) {
+      <div class="boarded-confirmation">
+        <p>You have successfully boarded flight {{ trackedFlight.flight_number }}</p>
+      </div>
+    }
       <!-- Flight Info -->
     <div class="flight-info">
       <div class="info-item">
@@ -119,32 +144,9 @@
         <p><strong>Longitude:</strong> {{ trackedFlight.current_position.longitude || 'N/A' }}</p>
       </div>
     </div>
-
-    <!-- Boarding Notification -->
-    @if (isBoardingActive) {
-      <div class="boarding-section">
-        <div class="boarding-alert">
-          <h2>BOARDING STARTS NOW!</h2>
-          <p class="countdown">Time remaining: <strong>{{ boardingCountdown }}s</strong></p>
-          <button class="board-btn" (click)="boardFlight()" [disabled]="isBoarded">
-            {{ isBoarded ? '✓ Boarded' : 'BOARD FLIGHT' }}
-          </button>
-          @if (!isBoarded) {
-            <p class="warning">
-              You must board within 60 seconds or be marked as a no-show.
-            </p>
-          }
-        </div>
-      </div>
-    }
-
-    <!-- Boarded Confirmation -->
-    @if (isBoarded) {
-      <div class="boarded-confirmation">
-        <p>You have successfully boarded flight {{ trackedFlight.flight_number }}</p>
-      </div>
-    }
   </div>
+
+  <app-map [flights]="flights"></app-map>
 }
 
 </div>
