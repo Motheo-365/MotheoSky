@@ -254,7 +254,7 @@
                     "latitude" => (float)$row["latitude"],
                     "longitude" => (float)$row
                 ]
-            ]
+            ];
         }
         respond("success", "airports retrieved successfully", $airports);
     }
