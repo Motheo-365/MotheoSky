@@ -2,9 +2,9 @@
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
 
-    header_remove('Access-Control-Allow-Origin');
-    header_remove('Access-Control-Allow-Methods');
-    header_remove('Access-Control-Allow-Headers');
+    // header_remove('Access-Control-Allow-Origin');
+    // header_remove('Access-Control-Allow-Methods');
+    // header_remove('Access-Control-Allow-Headers');
 
     header('Content-Type: application/json'); // force api to always return json
     header('Access-Control-Allow-Origin: *'); // allow any website to call this api
