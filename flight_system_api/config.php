@@ -20,7 +20,7 @@
             $value = trim($value, "\t\n\r\0\x0B\"'");
 
             //Set the variable tso $_ENV can read it
-            $_ENV[name] = $value;
+            $_ENV[$name] = $value;
         }
     }
 

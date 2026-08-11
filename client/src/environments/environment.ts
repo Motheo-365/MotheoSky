@@ -1,9 +1,10 @@
 export const environment = {
-  production:false,
+  production: false,
 
-  apiUrl: "https://flight-system-api-zxif.onrender.com/api.php",
+  apiUrl: "https://flight-system.freedev.app/api.php",
+
   websocketServer: {
-      host: "server-dr6t.onrender.com",
-      protocol: "wss"
-    }
+    host: "server-dr6t.onrender.com",
+    protocol: "wss"
+  }
 };
